@@ -26,7 +26,8 @@ class SettingsManager:
             "overlay_opacity": UIConstants.DEFAULT_OPACITY,
             "hotkey_open": Hotkeys.DEFAULT_HOTKEY_OPEN,
             "hotkey_settings": Hotkeys.DEFAULT_HOTKEY_SETTINGS,
-            "hotkey_quit": Hotkeys.DEFAULT_HOTKEY_QUIT
+            "hotkey_quit": Hotkeys.DEFAULT_HOTKEY_QUIT,
+            "confirm_on_quit": True
         }
     
     def load_settings(self) -> None:
@@ -71,6 +72,9 @@ class SettingsManager:
             self.settings["hotkey_settings"] = Hotkeys.DEFAULT_HOTKEY_SETTINGS
         if "hotkey_quit" not in self.settings:
             self.settings["hotkey_quit"] = Hotkeys.DEFAULT_HOTKEY_QUIT
+        
+        if "confirm_on_quit" not in self.settings:
+            self.settings["confirm_on_quit"] = True
     
     def save_settings(self) -> None:
         """Save settings to file"""
@@ -122,3 +126,7 @@ class SettingsManager:
     @property
     def hotkey_quit(self) -> str:
         return self.settings["hotkey_quit"]
+    
+    @property
+    def confirm_on_quit(self) -> bool:
+        return self.settings.get("confirm_on_quit", True)

@@ -3,7 +3,7 @@ Settings Dialog for configuring the application
 """
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QSpinBox, QDoubleSpinBox, QLineEdit,
-                             QGroupBox, QFormLayout)
+                             QGroupBox, QFormLayout, QCheckBox)
 from PyQt5.QtCore import Qt
 from config.constants import UIConstants
 
@@ -55,6 +55,16 @@ class SettingsDialog(QDialog):
         appearance_layout.addRow("Opacity:", self.opacity_spin)
         appearance_group.setLayout(appearance_layout)
         
+        behavior_group = QGroupBox("Behavior")
+        behavior_layout = QFormLayout()
+        
+        self.confirm_quit_checkbox = QCheckBox("Ask for confirmation when quitting")
+        self.confirm_quit_checkbox.setChecked(self.app.settings_manager.confirm_on_quit)
+        self.confirm_quit_checkbox.setStyleSheet("QCheckBox { color: white; }")
+        
+        behavior_layout.addRow(self.confirm_quit_checkbox)
+        behavior_group.setLayout(behavior_layout)
+        
         hotkey_group = QGroupBox("Hotkeys")
         hotkey_layout = QFormLayout()
         
@@ -86,6 +96,7 @@ class SettingsDialog(QDialog):
         
         layout.addWidget(size_group)
         layout.addWidget(appearance_group)
+        layout.addWidget(behavior_group)
         layout.addWidget(hotkey_group)
         layout.addLayout(button_layout)
         
@@ -156,7 +167,8 @@ class SettingsDialog(QDialog):
         self.app.settings_manager.update({
             "hotkey_open": self.hotkey_open_edit.text(),
             "hotkey_settings": self.hotkey_settings_edit.text(),
-            "hotkey_quit": self.hotkey_quit_edit.text()
+            "hotkey_quit": self.hotkey_quit_edit.text(),
+            "confirm_on_quit": self.confirm_quit_checkbox.isChecked()
         })
         
         self.app.setup_hotkeys()

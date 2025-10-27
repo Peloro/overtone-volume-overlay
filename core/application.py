@@ -104,7 +104,12 @@ class VolumeOverlayApp:
         self.settings_manager.save_settings()
     
     def confirm_quit(self):
-        """Show confirmation dialog before quitting"""
+        """Show confirmation dialog before quitting (if enabled in settings)"""
+        # Check if confirmation is enabled
+        if not self.settings_manager.confirm_on_quit:
+            self.quit_application()
+            return
+        
         msg_box = QMessageBox()
         msg_box.setWindowTitle("Confirm Quit")
         msg_box.setText("Are you sure you want to quit Overtone?")

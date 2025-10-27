@@ -117,7 +117,7 @@ class SystemTrayIcon(QSystemTrayIcon):
     
     def on_quit_clicked(self):
         """Handle quit menu click"""
-        self.app.quit_application()
+        self.app.confirm_quit()
     
     def on_activated(self, reason):
         """Handle tray icon activation"""

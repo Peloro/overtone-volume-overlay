@@ -50,8 +50,8 @@ The application starts minimized to the system tray. Double-click the tray icon 
 ### Default Hotkeys
 
 - **Ctrl+Shift+V** - Toggle Overtone overlay
-- **Ctrl+Shift+M** - Mute all applications
 - **Ctrl+Shift+S** - Open settings
+- **Ctrl+Shift+Q** - Quit application
 
 Note: On Windows, registering system-wide hotkeys typically requires administrator privileges. This application requests admin rights when built as an executable so the hotkeys work globally.
 
@@ -75,7 +75,8 @@ Note: On Windows, registering system-wide hotkeys typically requires administrat
 
 Access settings via the system tray menu or hotkey (Ctrl+Shift+S):
 
-- **Width/Height** - Customize overlay dimensions (250-1000px)
+- **Width/Height** - Customize overlay dimensions (300-1000px)
+- **Opacity** - Adjust window transparency (0.1-1.0)
 - **Hotkeys** - Configure custom keyboard shortcuts (format: ctrl+shift+key)
 
 ## Technical Details
@@ -99,7 +100,7 @@ Access settings via the system tray menu or hotkey (Ctrl+Shift+S):
 
 Settings are automatically saved to `settings.json` in the application directory. The file includes:
 - Window dimensions
-- Opacity (fixed at 0.9)
+- Opacity (adjustable in settings)
 - Custom hotkey bindings
 
 ## Development

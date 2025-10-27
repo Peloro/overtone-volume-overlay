@@ -37,11 +37,6 @@ class VolumeOverlayApp:
         self.refresh_timer = QTimer()
         self.refresh_timer.timeout.connect(self.refresh_applications)
     
-    @property
-    def settings(self):
-        """Backward compatibility: return settings dict"""
-        return self.settings_manager.settings
-    
     def setup_hotkeys(self):
         """Setup global hotkeys"""
         try:

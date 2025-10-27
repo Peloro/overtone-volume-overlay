@@ -87,8 +87,6 @@ class Colors:
     TEXT_GRAY = "gray"
     TEXT_LIGHT_GRAY = "#aaa"
     TEXT_DISABLED = "#555"
-    
-    ICON_PRIMARY = (30, 136, 229)
 
 
 class Hotkeys:
@@ -120,11 +118,11 @@ class StyleSheets:
         """
     
     @staticmethod
-    def get_overlay_stylesheet(alpha: int) -> str:
-        """Get main overlay stylesheet with specified alpha"""
+    def get_overlay_stylesheet() -> str:
+        """Get main overlay stylesheet"""
         return f"""
             QWidget#VolumeOverlay {{
-                background-color: rgba(30, 30, 30, {alpha});
+                background-color: rgba(30, 30, 30, 255);
                 border-radius: {UIConstants.WINDOW_RADIUS}px;
             }}
             QLabel {{ color: {Colors.TEXT_WHITE}; }}

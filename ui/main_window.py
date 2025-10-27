@@ -25,6 +25,7 @@ class VolumeOverlay(QWidget):
         self.drag_position: QPoint = QPoint()
         self.title_bar: Optional[QFrame] = None
         self.filter_text: str = ""
+        self.filter_visible: bool = False
         
         # Initialize filter timer
         self._filter_timer = QTimer(self)
@@ -39,7 +40,7 @@ class VolumeOverlay(QWidget):
             if hasattr(self, '_filter_timer') and self._filter_timer:
                 self._filter_timer.stop()
                 self._filter_timer.deleteLater()
-        except:
+        except Exception:
             pass
     
     def init_ui(self):
@@ -63,6 +64,7 @@ class VolumeOverlay(QWidget):
         
         self.filter_bar = self._create_filter_bar()
         main_layout.addWidget(self.filter_bar)
+        self.filter_bar.setVisible(False)  # Hidden by default
         
         self.container = QFrame()
         self.container.setMinimumHeight(0)
@@ -104,6 +106,10 @@ class VolumeOverlay(QWidget):
         title_layout.addWidget(title_label)
         title_layout.addStretch()
         
+        # Create filter toggle button
+        self.filter_toggle_btn = self._create_button("⌕", self.toggle_filter, "Show/Hide filter", StyleSheets.get_settings_button_stylesheet())
+        title_layout.addWidget(self.filter_toggle_btn)
+        
         for text, callback, tooltip, stylesheet in [
             ("⚙", self.app.show_settings, "Settings", StyleSheets.get_settings_button_stylesheet()),
             ("—", self.hide, "Minimize to tray", StyleSheets.get_minimize_button_stylesheet()),
@@ -113,6 +119,19 @@ class VolumeOverlay(QWidget):
         
         title_bar.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.TITLE_BAR_BG))
         return title_bar
+    
+    def toggle_filter(self):
+        """Toggle the visibility of the filter bar"""
+        self.filter_visible = not self.filter_visible
+        self.filter_bar.setVisible(self.filter_visible)
+        
+        # Focus filter input when showing
+        if self.filter_visible:
+            self.filter_input.setFocus()
+        else:
+            # Clear filter when hiding
+            if self.filter_text:
+                self.clear_filter()
     
     def _create_filter_bar(self) -> QFrame:
         """Create the search/filter bar"""
@@ -198,7 +217,7 @@ class VolumeOverlay(QWidget):
     def update_page_display(self) -> None:
         """Update the displayed applications based on current page"""
         if not self.filtered_sessions:
-            self._clear_all_controls()
+            self.clear_all_controls()
             self.page_label.setText("No matches" if self.filter_text and self.all_sessions else "0 / 0")
             self.prev_btn.setEnabled(False)
             self.next_btn.setEnabled(False)
@@ -235,7 +254,7 @@ class VolumeOverlay(QWidget):
         self.prev_btn.setEnabled(self.current_page > 0)
         self.next_btn.setEnabled(self.current_page < total_pages - 1)
     
-    def _clear_all_controls(self) -> None:
+    def clear_all_controls(self) -> None:
         """Clear all app controls from layout"""
         for name, widget in list(self.app_controls.items()):
             self.container_layout.removeWidget(widget)

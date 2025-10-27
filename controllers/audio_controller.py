@@ -97,12 +97,18 @@ class AudioController:
     def _get_window_title_by_pid(self, pid: int) -> Optional[str]:
         """Get the main window title for a given process ID"""
         titles = []
+        
+        def enum_window_callback(hwnd, title_list):
+            """Callback function for enumerating windows"""
+            if win32gui.IsWindowVisible(hwnd):
+                _, window_pid = win32process.GetWindowThreadProcessId(hwnd)
+                if window_pid == pid:
+                    title = win32gui.GetWindowText(hwnd)
+                    if title:
+                        title_list.append(title)
+        
         try:
-            win32gui.EnumWindows(lambda hwnd, t: (
-                t.append(title) if win32gui.IsWindowVisible(hwnd) and 
-                win32process.GetWindowThreadProcessId(hwnd)[1] == pid and 
-                (title := win32gui.GetWindowText(hwnd)) else None
-            ), titles)
+            win32gui.EnumWindows(enum_window_callback, titles)
             return titles[0] if titles else None
         except Exception as e:
             print(f"Error getting window title for PID {pid}: {e}")
@@ -202,10 +208,12 @@ class AudioController:
         """Set volume for a specific application by PID(s)"""
         pids = [pids] if isinstance(pids, int) else pids
         try:
-            return any(
-                session.SimpleAudioVolume.SetMasterVolume(volume, None) or True
-                for pid in pids if (session := self._get_or_refresh_session(pid))
-            )
+            success = False
+            for pid in pids:
+                if session := self._get_or_refresh_session(pid):
+                    session.SimpleAudioVolume.SetMasterVolume(volume, None)
+                    success = True
+            return success
         except Exception as e:
             print(f"Error setting volume: {e}")
             return False
@@ -226,10 +234,12 @@ class AudioController:
         """Mute or unmute a specific application by PID(s)"""
         pids = [pids] if isinstance(pids, int) else pids
         try:
-            return any(
-                session.SimpleAudioVolume.SetMute(mute, None) or True
-                for pid in pids if (session := self._get_or_refresh_session(pid))
-            )
+            success = False
+            for pid in pids:
+                if session := self._get_or_refresh_session(pid):
+                    session.SimpleAudioVolume.SetMute(mute, None)
+                    success = True
+            return success
         except Exception as e:
             print(f"Error setting mute: {e}")
             return False

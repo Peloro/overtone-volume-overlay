@@ -50,7 +50,7 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         
         # Set minimum size to prevent deformation
         self.setMinimumHeight(UIConstants.APP_CONTROL_HEIGHT)
-        self.setMinimumWidth(200)  # Minimum width to keep controls readable
+        self.setMinimumWidth(UIConstants.MIN_CONTROL_WIDTH)
         
         name_label = QLabel(self.session['name'])
         name_label.setStyleSheet(StyleSheets.get_label_stylesheet())
@@ -74,7 +74,7 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         self.slider.setValue(int(self.session['volume'] * 100))
         self.slider.setStyleSheet(StyleSheets.get_app_slider_stylesheet())
         self.slider.valueChanged.connect(self.on_slider_changed)
-        self.slider.setMinimumWidth(80)  # Minimum slider width
+        self.slider.setMinimumWidth(UIConstants.MIN_SLIDER_WIDTH)
         
         self.volume_text = QLineEdit()
         self.volume_text.setFixedWidth(UIConstants.VOLUME_TEXT_WIDTH)

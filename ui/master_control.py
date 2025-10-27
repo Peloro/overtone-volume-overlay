@@ -32,7 +32,7 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         layout.setSpacing(UIConstants.CONTROL_SPACING)
         
         # Set minimum size to prevent deformation
-        self.setMinimumWidth(200)
+        self.setMinimumWidth(UIConstants.MIN_CONTROL_WIDTH)
         
         master_label = QLabel("🔊 System Volume")
         master_label.setStyleSheet(StyleSheets.get_label_stylesheet())
@@ -48,7 +48,7 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         self.slider.setValue(int(self._initial_master_volume * 100))
         self.slider.setStyleSheet(StyleSheets.get_master_slider_stylesheet())
         self.slider.valueChanged.connect(self.on_volume_changed)
-        self.slider.setMinimumWidth(80)  # Minimum slider width
+        self.slider.setMinimumWidth(UIConstants.MIN_SLIDER_WIDTH)
 
         self.volume_text = QLineEdit()
         self.volume_text.setFixedWidth(UIConstants.VOLUME_TEXT_WIDTH)

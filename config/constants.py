@@ -63,6 +63,10 @@ class UIConstants:
     SMALL_BUTTON_RADIUS = 3
     SLIDER_RADIUS = 3
     HANDLE_RADIUS = 7
+    
+    # Minimum control widths
+    MIN_CONTROL_WIDTH = 200
+    MIN_SLIDER_WIDTH = 80
 
 
 class Colors:

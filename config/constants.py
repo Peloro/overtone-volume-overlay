@@ -19,8 +19,8 @@ class UIConstants:
     """UI dimension and timing constants"""
     DEFAULT_OVERLAY_WIDTH = 300
     DEFAULT_OVERLAY_HEIGHT = 300
-    MIN_OVERLAY_WIDTH = 280  # Reduced to allow 300x400 but still prevent extreme deformation
-    MIN_OVERLAY_HEIGHT = 350
+    MIN_OVERLAY_WIDTH = 300
+    MIN_OVERLAY_HEIGHT = 300
     MAX_OVERLAY_WIDTH = 1000
     MAX_OVERLAY_HEIGHT = 1000
     

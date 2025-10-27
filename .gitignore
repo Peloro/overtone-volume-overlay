@@ -17,3 +17,10 @@ env/
 .idea/
 *.swp
 *.swo
+
+# PyInstaller
+build/
+dist/
+*.exe
+build.bat
+Overtone.spec

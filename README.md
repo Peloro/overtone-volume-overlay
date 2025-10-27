@@ -117,7 +117,26 @@ python main.py
 
 ### Building
 
-*To be added: Instructions for creating standalone executable*
+To create a standalone executable:
+
+1. Ensure PyInstaller is installed:
+```bash
+pip install pyinstaller
+```
+
+2. Build the executable using the provided spec file:
+```bash
+python -m PyInstaller Overtone.spec --clean
+```
+
+Or simply run the build script:
+```bash
+build.bat
+```
+
+The executable will be created in the `dist` folder as `Overtone.exe`. This is a single-file executable that can be distributed without requiring Python installation.
+
+**Note:** The first build may take several minutes as PyInstaller analyzes dependencies and packages everything together.
 
 ## Known Issues
 

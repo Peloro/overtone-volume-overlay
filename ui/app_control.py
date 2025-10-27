@@ -1,6 +1,7 @@
 """
 Individual Application Volume Control Widget
 """
+from typing import Dict, Any
 from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QSlider, 
                              QLabel, QPushButton, QLineEdit, QFrame)
 from PyQt5.QtCore import Qt
@@ -12,16 +13,35 @@ from .base_volume_control import BaseVolumeControl
 class AppVolumeControl(QFrame, BaseVolumeControl):
     """Widget for controlling volume of a single application"""
     
-    def __init__(self, session, audio_controller):
+    def __init__(self, session: Dict[str, Any], audio_controller) -> None:
         QFrame.__init__(self)
         BaseVolumeControl.__init__(self)
         self.session = session
         self.audio_controller = audio_controller
         
         current_vol = int(session['volume'] * 100)
-        self.init_volume_state(current_vol)
+        is_muted = session.get('muted', False)
+        self.init_volume_state(current_vol, is_muted)
         
         self.init_ui()
+
+    def update_session(self, session: Dict[str, Any]) -> None:
+        """Update UI state from a refreshed session without recreating the widget"""
+        self.session = session
+        # Update slider and text only if values changed to avoid emitting signals excessively
+        new_val = int(session['volume'] * 100)
+        new_muted = session.get('muted', False)
+        
+        if self.slider and self.slider.value() != new_val:
+            self.slider.blockSignals(True)
+            self.slider.setValue(new_val)
+            self.slider.blockSignals(False)
+        if self.volume_text and self.volume_text.text() != str(new_val):
+            self.volume_text.setText(str(new_val))
+        # Update mute icon to reflect current mute state
+        if self.is_muted != new_muted:
+            self.is_muted = new_muted
+            self.update_mute_icon(new_muted)
     
     def init_ui(self):
         """Initialize the UI for a single app control"""
@@ -59,7 +79,8 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         self.volume_text.returnPressed.connect(self.on_volume_text_changed)
         self.volume_text.editingFinished.connect(self.on_volume_text_changed)
         
-        self.mute_btn = QPushButton("🔊" if not self.session['muted'] else "🔇")
+        is_muted = self.session.get('muted', False)
+        self.mute_btn = QPushButton("🔇" if is_muted else "🔊")
         self.mute_btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
         self.mute_btn.setStyleSheet(StyleSheets.get_mute_button_stylesheet(is_master=False))
         self.mute_btn.clicked.connect(self.on_mute_clicked)
@@ -70,19 +91,20 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         
         layout.addLayout(control_layout)
     
-    def on_slider_changed(self, value):
+    def on_slider_changed(self, value: int) -> None:
         """Handle slider value change"""
         self.handle_volume_slider_change(
             value,
-            lambda vol: self.audio_controller.set_application_volume(self.session['pid'], vol)
+            lambda vol: self.audio_controller.set_application_volume(self.session['pids'], vol)
         )
     
-    def on_mute_clicked(self):
+    def on_mute_clicked(self) -> None:
         """Handle mute button click"""
         self.handle_mute_toggle(
-            lambda mute: self.audio_controller.set_application_mute(self.session['pid'], mute)
+            lambda: self.audio_controller.get_application_mute(self.session['pids']),
+            lambda mute: self.audio_controller.set_application_mute(self.session['pids'], mute)
         )
     
-    def on_volume_text_changed(self):
+    def on_volume_text_changed(self) -> None:
         """Handle volume text box change"""
         self.handle_volume_text_change()

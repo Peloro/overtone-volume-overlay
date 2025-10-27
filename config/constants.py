@@ -36,6 +36,9 @@ class UIConstants:
     VOLUME_TEXT_WIDTH = 40
     
     REFRESH_INTERVAL = 3000
+    FILTER_DEBOUNCE_MS = 150  # Debounce time for filter input
+    ERROR_FLASH_DURATION_MS = 300  # Duration for error visual feedback
+    NAME_CACHE_TTL_SECONDS = 15.0  # TTL for cached application names
     
     DEFAULT_OPACITY = 0.9
     MIN_OPACITY = 0.1
@@ -74,6 +77,8 @@ class Colors:
     
     SETTINGS_BUTTON_BG = "#455a64"
     SETTINGS_BUTTON_HOVER = "#607d8b"
+    MINIMIZE_BUTTON_BG = "#757575"
+    MINIMIZE_BUTTON_HOVER = "#9e9e9e"
     CLOSE_BUTTON_BG = "#d32f2f"
     CLOSE_BUTTON_HOVER = "#f44336"
     PRIMARY_BUTTON_BG = "#1e88e5"
@@ -172,6 +177,22 @@ class StyleSheets:
             }}
             QPushButton:hover {{
                 background-color: {Colors.SETTINGS_BUTTON_HOVER};
+            }}
+        """
+    
+    @staticmethod
+    def get_minimize_button_stylesheet() -> str:
+        return f"""
+            QPushButton {{
+                background-color: {Colors.MINIMIZE_BUTTON_BG};
+                color: {Colors.TEXT_WHITE};
+                border: none;
+                border-radius: {UIConstants.BUTTON_RADIUS}px;
+                font-size: {UIConstants.CLOSE_BUTTON_FONT_SIZE}px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: {Colors.MINIMIZE_BUTTON_HOVER};
             }}
         """
     

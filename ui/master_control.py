@@ -12,14 +12,16 @@ from .base_volume_control import BaseVolumeControl
 class MasterVolumeControl(QFrame, BaseVolumeControl):
     """Widget for controlling system master volume"""
     
-    def __init__(self, audio_controller):
+    def __init__(self, audio_controller) -> None:
         QFrame.__init__(self)
         BaseVolumeControl.__init__(self)
         self.audio_controller = audio_controller
         
-        master_volume = self.audio_controller.get_master_volume()
-        current_master_vol = int(master_volume * 100)
-        self.init_volume_state(current_master_vol)
+        # Fetch initial master volume once for initializing UI state
+        self._initial_master_volume = self.audio_controller.get_master_volume()
+        self._initial_master_mute = self.audio_controller.get_master_mute()
+        current_master_vol = int(self._initial_master_volume * 100)
+        self.init_volume_state(current_master_vol, self._initial_master_mute)
         
         self.init_ui()
     
@@ -39,25 +41,24 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         layout.addWidget(master_label)
         
         master_control_layout = QHBoxLayout()
-        
+
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(0)
         self.slider.setMaximum(100)
-        master_volume = self.audio_controller.get_master_volume()
-        self.slider.setValue(int(master_volume * 100))
+        # Use the master volume fetched earlier for initial UI state
+        self.slider.setValue(int(self._initial_master_volume * 100))
         self.slider.setStyleSheet(StyleSheets.get_master_slider_stylesheet())
         self.slider.valueChanged.connect(self.on_volume_changed)
-        
+
         self.volume_text = QLineEdit()
         self.volume_text.setFixedWidth(UIConstants.VOLUME_TEXT_WIDTH)
-        self.volume_text.setText(str(int(master_volume * 100)))
+        self.volume_text.setText(str(int(self._initial_master_volume * 100)))
         self.volume_text.setStyleSheet(StyleSheets.get_master_volume_text_stylesheet())
         self.volume_text.setReadOnly(False)
         self.volume_text.returnPressed.connect(self.on_volume_text_changed)
         self.volume_text.editingFinished.connect(self.on_volume_text_changed)
         
-        is_muted = self.audio_controller.get_master_mute()
-        self.mute_btn = QPushButton("🔇" if is_muted else "🔊")
+        self.mute_btn = QPushButton("🔇" if self._initial_master_mute else "🔊")
         self.mute_btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
         self.mute_btn.setStyleSheet(StyleSheets.get_mute_button_stylesheet(is_master=True))
         self.mute_btn.clicked.connect(self.on_mute_clicked)
@@ -72,19 +73,20 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
             bg_color=Colors.MASTER_FRAME_BG
         ))
     
-    def on_volume_changed(self, value):
+    def on_volume_changed(self, value: int) -> None:
         """Handle master volume slider change"""
         self.handle_volume_slider_change(
             value,
             lambda vol: self.audio_controller.set_master_volume(vol)
         )
     
-    def on_mute_clicked(self):
+    def on_mute_clicked(self) -> None:
         """Handle master mute button click"""
         self.handle_mute_toggle(
+            lambda: self.audio_controller.get_master_mute(),
             lambda mute: self.audio_controller.set_master_mute(mute)
         )
     
-    def on_volume_text_changed(self):
+    def on_volume_text_changed(self) -> None:
         """Handle master volume text box change"""
         self.handle_volume_text_change()

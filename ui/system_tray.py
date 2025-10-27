@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt, QPoint
 
 
 class SystemTrayIcon(QSystemTrayIcon):
-    def __init__(self, app):
+    def __init__(self, app) -> None:
         self.app = app
         
         icon = self.create_icon()
@@ -37,7 +37,7 @@ class SystemTrayIcon(QSystemTrayIcon):
         
         self.activated.connect(self.on_activated)
     
-    def create_icon(self):
+    def create_icon(self) -> QIcon:
         """Create or load a tray icon, preserving transparency when available."""
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         assets_dir = os.path.join(base_dir, 'assets')
@@ -109,19 +109,19 @@ class SystemTrayIcon(QSystemTrayIcon):
         
         return QIcon(pixmap)
     
-    def on_show_overlay_clicked(self):
+    def on_show_overlay_clicked(self) -> None:
         """Handle show overlay menu click"""
         self.app.show_overlay()
     
-    def on_settings_clicked(self):
+    def on_settings_clicked(self) -> None:
         """Handle settings menu click"""
         self.app.show_settings()
     
-    def on_quit_clicked(self):
+    def on_quit_clicked(self) -> None:
         """Handle quit menu click"""
         self.app.confirm_quit()
     
-    def on_activated(self, reason):
+    def on_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
         """Handle tray icon activation"""
         if reason == QSystemTrayIcon.DoubleClick:
             self.app.show_overlay()

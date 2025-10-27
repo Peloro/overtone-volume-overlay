@@ -1,6 +1,7 @@
 """
 Settings Dialog for configuring the application
 """
+from typing import Optional
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QSpinBox, QDoubleSpinBox, QLineEdit,
                              QGroupBox, QFormLayout, QCheckBox, QTabWidget, QTextBrowser, QWidget)
@@ -9,7 +10,7 @@ from config.constants import UIConstants, AppInfo
 
 
 class SettingsDialog(QDialog):
-    def __init__(self, app):
+    def __init__(self, app) -> None:
         super().__init__()
         self.app = app
         self.init_ui()
@@ -35,18 +36,14 @@ class SettingsDialog(QDialog):
         
         layout.addWidget(tab_widget)
         
-        # Buttons at the bottom
+        # Close button at the bottom (no Save/Cancel needed since all changes apply immediately)
         button_layout = QHBoxLayout()
         
-        save_btn = QPushButton("Save")
-        save_btn.clicked.connect(self.save_settings)
-        
-        cancel_btn = QPushButton("Cancel")
-        cancel_btn.clicked.connect(self.close)
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.close)
         
         button_layout.addStretch()
-        button_layout.addWidget(save_btn)
-        button_layout.addWidget(cancel_btn)
+        button_layout.addWidget(close_btn)
         
         layout.addLayout(button_layout)
         
@@ -100,12 +97,20 @@ class SettingsDialog(QDialog):
         behavior_layout.addRow(self.confirm_quit_checkbox)
         behavior_group.setLayout(behavior_layout)
         
+        # Connect confirm quit checkbox to save immediately
+        self.confirm_quit_checkbox.stateChanged.connect(self.on_confirm_quit_changed)
+        
         hotkey_group = QGroupBox("Hotkeys")
         hotkey_layout = QFormLayout()
         
         self.hotkey_open_edit = QLineEdit(self.app.settings_manager.hotkey_open)
+        self.hotkey_open_edit.textChanged.connect(self.on_hotkey_changed)
+        
         self.hotkey_settings_edit = QLineEdit(self.app.settings_manager.hotkey_settings)
+        self.hotkey_settings_edit.textChanged.connect(self.on_hotkey_changed)
+        
         self.hotkey_quit_edit = QLineEdit(self.app.settings_manager.hotkey_quit)
+        self.hotkey_quit_edit.textChanged.connect(self.on_hotkey_changed)
         
         hotkey_layout.addRow("Open Overlay:", self.hotkey_open_edit)
         hotkey_layout.addRow("Open Settings:", self.hotkey_settings_edit)
@@ -114,6 +119,10 @@ class SettingsDialog(QDialog):
         hotkey_info = QLabel("Format: ctrl+shift+key, alt+key, etc.")
         hotkey_info.setStyleSheet("color: gray; font-size: 10px;")
         hotkey_layout.addRow(hotkey_info)
+        
+        hotkey_warning = QLabel("Note: Changes apply immediately")
+        hotkey_warning.setStyleSheet("color: #42a5f5; font-size: 10px; font-style: italic;")
+        hotkey_layout.addRow(hotkey_warning)
         
         hotkey_group.setLayout(hotkey_layout)
         
@@ -140,10 +149,7 @@ class SettingsDialog(QDialog):
         version_label.setAlignment(Qt.AlignCenter)
         
         # Description
-        description = QTextBrowser()
-        description.setOpenExternalLinks(True)
-        description.setMaximumHeight(350)
-        description.setHtml(f"""
+        description_label = QLabel(f"""
             <div style='color: white; font-family: Arial; font-size: 12px;'>
                 <p><b>Description:</b></p>
                 <p>{AppInfo.DESCRIPTION}</p>
@@ -167,18 +173,20 @@ class SettingsDialog(QDialog):
                 <p style='color: #aaa; font-size: 11px;'>© {AppInfo.YEAR} {AppInfo.AUTHOR}</p>
             </div>
         """)
-        description.setStyleSheet("""
-            QTextBrowser {
-                background-color: #2b2b2b;
-                border: 1px solid #555;
-                border-radius: 5px;
+        description_label.setWordWrap(True)
+        description_label.setOpenExternalLinks(True)
+        description_label.setTextFormat(Qt.RichText)
+        description_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        description_label.setStyleSheet("""
+            QLabel {
+                color: white;
                 padding: 10px;
             }
         """)
         
         about_widget.addWidget(title_label)
         about_widget.addWidget(version_label)
-        about_widget.addWidget(description)
+        about_widget.addWidget(description_label)
         about_widget.addStretch()
         
         container = QWidget()
@@ -250,32 +258,40 @@ class SettingsDialog(QDialog):
             }
         """)
     
-    def on_width_changed(self, value):
+    def on_width_changed(self, value: int) -> None:
         """Handle width change in real-time"""
         self.app.settings_manager.set("overlay_width", value)
         self.app.overlay.resize(value, self.app.settings_manager.overlay_height)
         self.app.settings_manager.save_settings()
     
-    def on_height_changed(self, value):
+    def on_height_changed(self, value: int) -> None:
         """Handle height change in real-time"""
         self.app.settings_manager.set("overlay_height", value)
         self.app.overlay.resize(self.app.settings_manager.overlay_width, value)
         self.app.settings_manager.save_settings()
     
-    def on_opacity_changed(self, value):
+    def on_opacity_changed(self, value: float) -> None:
         """Handle opacity change in real-time"""
         self.app.settings_manager.set("overlay_opacity", value)
         self.app.overlay.update_background_opacity()
         self.app.settings_manager.save_settings()
     
-    def save_settings(self):
-        """Save the hotkey settings (size and opacity are already saved in real-time)"""
+    def on_confirm_quit_changed(self, state: int) -> None:
+        """Handle confirm quit checkbox change"""
+        self.app.settings_manager.set("confirm_on_quit", bool(state))
+        self.app.settings_manager.save_settings()
+    
+    def on_hotkey_changed(self) -> None:
+        """Handle hotkey change - save and reapply immediately"""
         self.app.settings_manager.update({
             "hotkey_open": self.hotkey_open_edit.text(),
             "hotkey_settings": self.hotkey_settings_edit.text(),
             "hotkey_quit": self.hotkey_quit_edit.text(),
-            "confirm_on_quit": self.confirm_quit_checkbox.isChecked()
         })
-        
         self.app.setup_hotkeys()
+    
+    def save_settings(self):
+        """Deprecated - settings now save automatically"""
+        # This method is kept for backwards compatibility but does nothing
+        # All settings are saved immediately when changed
         self.close()

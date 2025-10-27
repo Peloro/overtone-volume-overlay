@@ -1,9 +1,10 @@
 """
 Main Overtone Overlay Window
 """
+from typing import Dict, List, Any, Optional
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QFrame, QLineEdit)
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtCore import Qt, QPoint, QTimer
 
 from config.constants import UIConstants, Colors, StyleSheets
 from .app_control import AppVolumeControl
@@ -13,16 +14,22 @@ from .master_control import MasterVolumeControl
 class VolumeOverlay(QWidget):
     """Main overlay window for volume control"""
     
-    def __init__(self, app):
+    def __init__(self, app) -> None:
         super().__init__()
         self.app = app
-        self.app_controls = {}
-        self.all_sessions = []
-        self.filtered_sessions = []
-        self.current_page = 0
-        self.drag_position = QPoint()
-        self.title_bar = None
-        self.filter_text = ""
+        # Map of app_name -> AppVolumeControl
+        self.app_controls: Dict[str, AppVolumeControl] = {}
+        self.all_sessions: List[Dict[str, Any]] = []
+        self.filtered_sessions: List[Dict[str, Any]] = []
+        self.current_page: int = 0
+        self.drag_position: QPoint = QPoint()
+        self.title_bar: Optional[QFrame] = None
+        self.filter_text: str = ""
+        
+        # Initialize filter timer
+        self._filter_timer = QTimer(self)
+        self._filter_timer.setSingleShot(True)
+        self._filter_timer.timeout.connect(self.apply_filter)
         
         self.init_ui()
     
@@ -116,14 +123,22 @@ class VolumeOverlay(QWidget):
         settings_btn.clicked.connect(self.app.show_settings)
         settings_btn.setToolTip("Settings")
         
+        minimize_btn = QPushButton("—")
+        minimize_btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_SIZE)
+        minimize_btn.setStyleSheet(StyleSheets.get_minimize_button_stylesheet())
+        minimize_btn.clicked.connect(self.hide)
+        minimize_btn.setToolTip("Minimize to tray")
+        
         close_btn = QPushButton("×")
         close_btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_SIZE)
         close_btn.setStyleSheet(StyleSheets.get_close_button_stylesheet())
-        close_btn.clicked.connect(self.hide)
+        close_btn.clicked.connect(self.app.confirm_quit)
+        close_btn.setToolTip("Quit application")
 
         title_layout.addWidget(title_label)
         title_layout.addStretch()
         title_layout.addWidget(settings_btn)
+        title_layout.addWidget(minimize_btn)
         title_layout.addWidget(close_btn)
         
         title_bar.setStyleSheet(StyleSheets.get_frame_stylesheet(
@@ -200,18 +215,19 @@ class VolumeOverlay(QWidget):
         # Use setWindowOpacity for direct window transparency control
         self.setWindowOpacity(opacity)
     
-    def on_filter_changed(self, text):
+    def on_filter_changed(self, text: str) -> None:
         """Handle filter text change"""
         self.filter_text = text.lower().strip()
         self.clear_filter_btn.setVisible(bool(self.filter_text))
         self.current_page = 0  # Reset to first page when filter changes
-        self.apply_filter()
+        # Debounce filtering to avoid recomputing on every keystroke
+        self._filter_timer.start(UIConstants.FILTER_DEBOUNCE_MS)
     
     def clear_filter(self):
         """Clear the filter text"""
         self.filter_input.clear()
     
-    def apply_filter(self):
+    def apply_filter(self) -> None:
         """Apply the current filter to sessions"""
         if not self.filter_text:
             self.filtered_sessions = self.all_sessions
@@ -220,9 +236,11 @@ class VolumeOverlay(QWidget):
                 session for session in self.all_sessions
                 if self.filter_text in session['name'].lower()
             ]
+        # Sort sessions alphabetically by name (case-insensitive)
+        self.filtered_sessions.sort(key=lambda s: s['name'].lower())
         self.update_page_display()
     
-    def refresh_applications(self):
+    def refresh_applications(self) -> None:
         """Refresh the list of applications with volume controls"""
         self.all_sessions = self.app.audio_controller.get_audio_sessions()
         self.apply_filter()
@@ -234,7 +252,7 @@ class VolumeOverlay(QWidget):
         apps_per_page = max(1, available_height // UIConstants.APP_CONTROL_HEIGHT)
         return apps_per_page
     
-    def update_page_display(self):
+    def update_page_display(self) -> None:
         """Update the displayed applications based on current page"""
         if not self.filtered_sessions:
             self._clear_all_controls()
@@ -256,44 +274,72 @@ class VolumeOverlay(QWidget):
         start_idx = self.current_page * apps_per_page
         end_idx = min(start_idx + apps_per_page, total_apps)
         page_sessions = self.filtered_sessions[start_idx:end_idx]
-        
-        current_app_names = {session['name'] for session in page_sessions}
-        displayed_app_names = set(self.app_controls.keys())
-        
-        if current_app_names != displayed_app_names:
-            self._clear_all_controls()
-            
-            for session in page_sessions:
+
+        current_names = {session['name'] for session in page_sessions}
+        displayed_names = set(self.app_controls.keys())
+
+        # Remove controls no longer on this page
+        removed = displayed_names - current_names
+        if removed:
+            for name in removed:
+                widget = self.app_controls.pop(name, None)
+                if widget:
+                    self.container_layout.removeWidget(widget)
+                    widget.setParent(None)
+                    widget.deleteLater()
+
+        # Add or update controls for sessions on this page
+        for session in page_sessions:
+            name = session['name']
+            control = self.app_controls.get(name)
+            if control is None:
                 control = AppVolumeControl(session, self.app.audio_controller)
                 self.container_layout.addWidget(control)
-                self.app_controls[session['name']] = control
-            
-            self.container_layout.addStretch()
+                self.app_controls[name] = control
+            else:
+                # Update existing control to reflect new volume/mute
+                if hasattr(control, 'update_session'):
+                    control.update_session(session)
+        
+        # Ensure there is a stretch at the end (remove existing stretches first)
+        self._ensure_container_stretch()
         
         self.page_label.setText(f"{self.current_page + 1} / {total_pages}")
         self.prev_btn.setEnabled(self.current_page > 0)
         self.next_btn.setEnabled(self.current_page < total_pages - 1)
     
-    def _clear_all_controls(self):
+    def _clear_all_controls(self) -> None:
         """Clear all app controls from layout"""
         for widget in self.app_controls.values():
             self.container_layout.removeWidget(widget)
             widget.setParent(None)
             widget.deleteLater()
         self.app_controls.clear()
-        
-        if self.container_layout.count() > 0:
+        # Remove all remaining items (including stretches)
+        while self.container_layout.count():
             item = self.container_layout.takeAt(0)
-            if item:
-                del item
+            w = item.widget()
+            if w is not None:
+                w.deleteLater()
+        self._ensure_container_stretch()
+
+    def _ensure_container_stretch(self) -> None:
+        """Ensure there is a stretch at the end of the container layout"""
+        count = self.container_layout.count()
+        if count == 0:
+            self.container_layout.addStretch()
+            return
+        last_item = self.container_layout.itemAt(count - 1)
+        if last_item is None or last_item.spacerItem() is None:
+            self.container_layout.addStretch()
     
-    def previous_page(self):
+    def previous_page(self) -> None:
         """Go to previous page"""
         if self.current_page > 0:
             self.current_page -= 1
             self.update_page_display()
     
-    def next_page(self):
+    def next_page(self) -> None:
         """Go to next page"""
         apps_per_page = self.get_apps_per_page()
         total_pages = max(1, (len(self.filtered_sessions) + apps_per_page - 1) // apps_per_page)

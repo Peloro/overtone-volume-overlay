@@ -39,11 +39,13 @@ class SystemTrayIcon(QSystemTrayIcon):
     
     def create_icon(self):
         """Create or load a tray icon, preserving transparency when available."""
-        candidate_order = ['icon2.ico', 'icon2.png'] if sys.platform.startswith('win') else ['icon2.png', 'icon2.ico']
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         assets_dir = os.path.join(base_dir, 'assets')
+        
+        # Try ICO first on Windows, then PNG
+        icon_files = ['icon2.ico', 'icon2.png'] if sys.platform.startswith('win') else ['icon2.png', 'icon2.ico']
 
-        for icon_file in candidate_order:
+        for icon_file in icon_files:
             icon_path = os.path.join(assets_dir, icon_file)
             if not os.path.exists(icon_path):
                 continue

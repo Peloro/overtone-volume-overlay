@@ -40,37 +40,31 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         
         master_control_layout = QHBoxLayout()
         
-        self.master_slider = QSlider(Qt.Horizontal)
-        self.master_slider.setMinimum(0)
-        self.master_slider.setMaximum(100)
+        self.slider = QSlider(Qt.Horizontal)
+        self.slider.setMinimum(0)
+        self.slider.setMaximum(100)
         master_volume = self.audio_controller.get_master_volume()
-        self.master_slider.setValue(int(master_volume * 100))
-        self.master_slider.setStyleSheet(StyleSheets.get_master_slider_stylesheet())
-        self.master_slider.valueChanged.connect(self.on_volume_changed)
+        self.slider.setValue(int(master_volume * 100))
+        self.slider.setStyleSheet(StyleSheets.get_master_slider_stylesheet())
+        self.slider.valueChanged.connect(self.on_volume_changed)
         
-        self.slider = self.master_slider
-        
-        self.master_volume_text = QLineEdit()
-        self.master_volume_text.setFixedWidth(UIConstants.VOLUME_TEXT_WIDTH)
-        self.master_volume_text.setText(str(int(master_volume * 100)))
-        self.master_volume_text.setStyleSheet(StyleSheets.get_master_volume_text_stylesheet())
-        self.master_volume_text.setReadOnly(False)
-        self.master_volume_text.returnPressed.connect(self.on_volume_text_changed)
-        self.master_volume_text.editingFinished.connect(self.on_volume_text_changed)
-        
-        self.volume_text = self.master_volume_text
+        self.volume_text = QLineEdit()
+        self.volume_text.setFixedWidth(UIConstants.VOLUME_TEXT_WIDTH)
+        self.volume_text.setText(str(int(master_volume * 100)))
+        self.volume_text.setStyleSheet(StyleSheets.get_master_volume_text_stylesheet())
+        self.volume_text.setReadOnly(False)
+        self.volume_text.returnPressed.connect(self.on_volume_text_changed)
+        self.volume_text.editingFinished.connect(self.on_volume_text_changed)
         
         is_muted = self.audio_controller.get_master_mute()
-        self.master_mute_btn = QPushButton("🔇" if is_muted else "🔊")
-        self.master_mute_btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
-        self.master_mute_btn.setStyleSheet(StyleSheets.get_mute_button_stylesheet(is_master=True))
-        self.master_mute_btn.clicked.connect(self.on_mute_clicked)
+        self.mute_btn = QPushButton("🔇" if is_muted else "🔊")
+        self.mute_btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
+        self.mute_btn.setStyleSheet(StyleSheets.get_mute_button_stylesheet(is_master=True))
+        self.mute_btn.clicked.connect(self.on_mute_clicked)
         
-        self.mute_btn = self.master_mute_btn
-        
-        master_control_layout.addWidget(self.master_slider)
-        master_control_layout.addWidget(self.master_volume_text)
-        master_control_layout.addWidget(self.master_mute_btn)
+        master_control_layout.addWidget(self.slider)
+        master_control_layout.addWidget(self.volume_text)
+        master_control_layout.addWidget(self.mute_btn)
         
         layout.addLayout(master_control_layout)
         

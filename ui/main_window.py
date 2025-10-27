@@ -1,11 +1,9 @@
 """
 Main Overtone Overlay Window
 """
-import os
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QFrame, QLineEdit)
 from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtGui import QPixmap, QIcon
 
 from config.constants import UIConstants, Colors, StyleSheets
 from .app_control import AppVolumeControl
@@ -24,7 +22,6 @@ class VolumeOverlay(QWidget):
         self.current_page = 0
         self.drag_position = QPoint()
         self.title_bar = None
-        self._last_apps_per_page = None
         self.filter_text = ""
         
         self.init_ui()
@@ -93,11 +90,6 @@ class VolumeOverlay(QWidget):
         main_layout.addWidget(self.pagination_frame)
         
         self.setLayout(main_layout)
-
-        # Try to set the application/window icon as well (affects taskbar and alt-tab)
-        icon = self._load_app_icon()
-        if icon is not None:
-            self.setWindowIcon(icon)
         
         self.setObjectName("VolumeOverlay")
         self.setStyleSheet(StyleSheets.get_overlay_stylesheet())
@@ -171,31 +163,6 @@ class VolumeOverlay(QWidget):
         filter_frame.setStyleSheet(StyleSheets.get_frame_stylesheet())
         
         return filter_frame
-
-    def _assets_dir(self) -> str:
-        """Return absolute path to the assets directory."""
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        return os.path.join(base_dir, 'assets')
-
-    def _load_app_icon(self) -> QIcon:
-        """Load an application icon as QIcon for window/taskbar.
-
-        Prefers ICO on Windows, otherwise PNG. Returns None if neither loads.
-        """
-        assets_dir = self._assets_dir()
-        ico_path = os.path.join(assets_dir, 'icon2.ico')
-        png_path = os.path.join(assets_dir, 'icon2.png')
-
-        # Prefer ICO on Windows for best taskbar integration
-        if os.path.exists(ico_path):
-            icon = QIcon(ico_path)
-            if not icon.isNull():
-                return icon
-        if os.path.exists(png_path):
-            icon = QIcon(png_path)
-            if not icon.isNull():
-                return icon
-        return None
     
     def _create_pagination_controls(self) -> QFrame:
         """Create pagination controls frame"""
@@ -337,13 +304,8 @@ class VolumeOverlay(QWidget):
     def resizeEvent(self, event):
         """Handle window resize to update pagination"""
         super().resizeEvent(event)
-        new_apps_per_page = self.get_apps_per_page()
-        
-        if self._last_apps_per_page != new_apps_per_page:
-            self.current_page = 0
-            self._last_apps_per_page = new_apps_per_page
-            if hasattr(self, 'all_sessions'):
-                self.update_page_display()
+        if hasattr(self, 'all_sessions'):
+            self.update_page_display()
     
     def mousePressEvent(self, event):
         """Handle mouse press for dragging"""

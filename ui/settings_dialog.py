@@ -3,9 +3,8 @@ Settings Dialog for configuring the application
 """
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QSpinBox, QDoubleSpinBox, QLineEdit,
-                             QGroupBox, QFormLayout, QCheckBox, QTabWidget, QTextBrowser)
+                             QGroupBox, QFormLayout, QCheckBox, QTabWidget, QTextBrowser, QWidget)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QDesktopServices
 from config.constants import UIConstants, AppInfo
 
 
@@ -83,9 +82,9 @@ class SettingsDialog(QDialog):
         self.opacity_spin = QDoubleSpinBox()
         self.opacity_spin.setMinimum(UIConstants.MIN_OPACITY)
         self.opacity_spin.setMaximum(UIConstants.MAX_OPACITY)
-        self.opacity_spin.setSingleStep(0.1)
+        self.opacity_spin.setSingleStep(0.05)
         self.opacity_spin.setValue(self.app.settings_manager.overlay_opacity)
-        self.opacity_spin.setDecimals(1)
+        self.opacity_spin.setDecimals(2)
         self.opacity_spin.valueChanged.connect(self.on_opacity_changed)
         
         appearance_layout.addRow("Opacity:", self.opacity_spin)
@@ -124,7 +123,6 @@ class SettingsDialog(QDialog):
         settings_widget.addWidget(hotkey_group)
         settings_widget.addStretch()
         
-        from PyQt5.QtWidgets import QWidget
         container = QWidget()
         container.setLayout(settings_widget)
         return container
@@ -183,7 +181,6 @@ class SettingsDialog(QDialog):
         about_widget.addWidget(description)
         about_widget.addStretch()
         
-        from PyQt5.QtWidgets import QWidget
         container = QWidget()
         container.setLayout(about_widget)
         return container

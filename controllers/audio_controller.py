@@ -15,7 +15,6 @@ import os
 class AudioController:
     def __init__(self):
         self._get_master_volume_interface()
-        self._window_cache = {}  # Cache for window titles by PID
     
     def _get_master_volume_interface(self):
         """Get the master volume interface"""
@@ -110,10 +109,6 @@ class AudioController:
     
     def _get_display_name(self, process_name: str, pid: int, process) -> str:
         """Get display name for a process, trying multiple methods"""
-        # Check cache first
-        if pid in self._window_cache:
-            return self._window_cache[pid]
-        
         display_name = None
         
         # Method 1: Try to get window title
@@ -138,9 +133,6 @@ class AudioController:
                 display_name = process_name[:-4]
             else:
                 display_name = process_name
-        
-        # Cache the result
-        self._window_cache[pid] = display_name
         
         return display_name
     
@@ -174,24 +166,14 @@ class AudioController:
         
         return sessions
     
-    def _find_session_by_pid(self, pid: int):
-        """
-        Find audio session by PID (helper method to avoid duplicate code)
-        Uses get_audio_sessions to avoid duplicating iteration logic
-        """
-        sessions = self.get_audio_sessions()
-        for session_info in sessions:
-            if session_info['pid'] == pid:
-                return session_info['session'].SimpleAudioVolume
-        return None
-    
     def set_application_volume(self, pid: int, volume: float) -> bool:
         """Set volume for a specific application by PID"""
         try:
-            volume_interface = self._find_session_by_pid(pid)
-            if volume_interface:
-                volume_interface.SetMasterVolume(volume, None)
-                return True
+            audio_sessions = AudioUtilities.GetAllSessions()
+            for session in audio_sessions:
+                if session.Process and session.Process.pid == pid:
+                    session.SimpleAudioVolume.SetMasterVolume(volume, None)
+                    return True
         except Exception as e:
             print(f"Error setting volume: {e}")
         return False
@@ -199,10 +181,11 @@ class AudioController:
     def set_application_mute(self, pid: int, mute: bool) -> bool:
         """Mute or unmute a specific application by PID"""
         try:
-            volume_interface = self._find_session_by_pid(pid)
-            if volume_interface:
-                volume_interface.SetMute(mute, None)
-                return True
+            audio_sessions = AudioUtilities.GetAllSessions()
+            for session in audio_sessions:
+                if session.Process and session.Process.pid == pid:
+                    session.SimpleAudioVolume.SetMute(mute, None)
+                    return True
         except Exception as e:
             print(f"Error setting mute: {e}")
         return False

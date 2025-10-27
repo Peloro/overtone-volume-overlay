@@ -29,11 +29,13 @@ class SettingsDialog(QDialog):
         self.width_spin.setMinimum(UIConstants.MIN_OVERLAY_WIDTH)
         self.width_spin.setMaximum(UIConstants.MAX_OVERLAY_WIDTH)
         self.width_spin.setValue(self.app.settings_manager.overlay_width)
+        self.width_spin.valueChanged.connect(self.on_width_changed)
         
         self.height_spin = QSpinBox()
         self.height_spin.setMinimum(UIConstants.MIN_OVERLAY_HEIGHT)
         self.height_spin.setMaximum(UIConstants.MAX_OVERLAY_HEIGHT)
         self.height_spin.setValue(self.app.settings_manager.overlay_height)
+        self.height_spin.valueChanged.connect(self.on_height_changed)
         
         size_layout.addRow("Width:", self.width_spin)
         size_layout.addRow("Height:", self.height_spin)
@@ -48,6 +50,7 @@ class SettingsDialog(QDialog):
         self.opacity_spin.setSingleStep(0.1)
         self.opacity_spin.setValue(self.app.settings_manager.overlay_opacity)
         self.opacity_spin.setDecimals(1)
+        self.opacity_spin.valueChanged.connect(self.on_opacity_changed)
         
         appearance_layout.addRow("Opacity:", self.opacity_spin)
         appearance_group.setLayout(appearance_layout)
@@ -130,16 +133,31 @@ class SettingsDialog(QDialog):
             }
         """)
     
+    def on_width_changed(self, value):
+        """Handle width change in real-time"""
+        self.app.settings_manager.set("overlay_width", value)
+        self.app.overlay.resize(value, self.app.settings_manager.overlay_height)
+        self.app.settings_manager.save_settings()
+    
+    def on_height_changed(self, value):
+        """Handle height change in real-time"""
+        self.app.settings_manager.set("overlay_height", value)
+        self.app.overlay.resize(self.app.settings_manager.overlay_width, value)
+        self.app.settings_manager.save_settings()
+    
+    def on_opacity_changed(self, value):
+        """Handle opacity change in real-time"""
+        self.app.settings_manager.set("overlay_opacity", value)
+        self.app.overlay.update_background_opacity()
+        self.app.settings_manager.save_settings()
+    
     def save_settings(self):
-        """Save the settings"""
+        """Save the hotkey settings (size and opacity are already saved in real-time)"""
         self.app.settings_manager.update({
-            "overlay_width": self.width_spin.value(),
-            "overlay_height": self.height_spin.value(),
-            "overlay_opacity": self.opacity_spin.value(),
             "hotkey_open": self.hotkey_open_edit.text(),
             "hotkey_settings": self.hotkey_settings_edit.text(),
             "hotkey_quit": self.hotkey_quit_edit.text()
         })
         
-        self.app.update_settings()
+        self.app.setup_hotkeys()
         self.close()

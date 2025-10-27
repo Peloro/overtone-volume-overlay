@@ -32,49 +32,44 @@ class SettingsManager:
     
     def load_settings(self) -> None:
         """Load settings from file or use defaults"""
+        self.settings = self._default_settings.copy()
+        
         if os.path.exists(self.settings_file):
             try:
                 with open(self.settings_file, 'r') as f:
-                    loaded_settings = json.load(f)
-                
-                self.settings = self._default_settings.copy()
-                self.settings.update(loaded_settings)
-                
-                self._validate_settings()
-                
+                    self.settings.update(json.load(f))
             except Exception as e:
                 print(f"Error loading settings: {e}")
-                self.settings = self._default_settings.copy()
-        else:
-            self.settings = self._default_settings.copy()
         
+        self._validate_settings()
         self.save_settings()
+    
+    def _clamp_value(self, key: str, min_val, max_val, default) -> Any:
+        """Clamp a setting value between min and max"""
+        return max(min_val, min(max_val, self.settings.get(key, default)))
     
     def _validate_settings(self) -> None:
         """Validate and clamp settings to acceptable ranges"""
-        self.settings["overlay_width"] = max(
-            UIConstants.MIN_OVERLAY_WIDTH,
-            min(UIConstants.MAX_OVERLAY_WIDTH, self.settings.get("overlay_width", UIConstants.DEFAULT_OVERLAY_WIDTH))
+        self.settings["overlay_width"] = self._clamp_value(
+            "overlay_width", UIConstants.MIN_OVERLAY_WIDTH, 
+            UIConstants.MAX_OVERLAY_WIDTH, UIConstants.DEFAULT_OVERLAY_WIDTH
         )
-        self.settings["overlay_height"] = max(
-            UIConstants.MIN_OVERLAY_HEIGHT,
-            min(UIConstants.MAX_OVERLAY_HEIGHT, self.settings.get("overlay_height", UIConstants.DEFAULT_OVERLAY_HEIGHT))
+        self.settings["overlay_height"] = self._clamp_value(
+            "overlay_height", UIConstants.MIN_OVERLAY_HEIGHT,
+            UIConstants.MAX_OVERLAY_HEIGHT, UIConstants.DEFAULT_OVERLAY_HEIGHT
+        )
+        self.settings["overlay_opacity"] = self._clamp_value(
+            "overlay_opacity", UIConstants.MIN_OPACITY,
+            UIConstants.MAX_OPACITY, UIConstants.DEFAULT_OPACITY
         )
         
-        self.settings["overlay_opacity"] = max(
-            UIConstants.MIN_OPACITY,
-            min(UIConstants.MAX_OPACITY, self.settings.get("overlay_opacity", UIConstants.DEFAULT_OPACITY))
-        )
-        
-        if "hotkey_open" not in self.settings:
-            self.settings["hotkey_open"] = Hotkeys.DEFAULT_HOTKEY_OPEN
-        if "hotkey_settings" not in self.settings:
-            self.settings["hotkey_settings"] = Hotkeys.DEFAULT_HOTKEY_SETTINGS
-        if "hotkey_quit" not in self.settings:
-            self.settings["hotkey_quit"] = Hotkeys.DEFAULT_HOTKEY_QUIT
-        
-        if "confirm_on_quit" not in self.settings:
-            self.settings["confirm_on_quit"] = True
+        for key, default in [
+            ("hotkey_open", Hotkeys.DEFAULT_HOTKEY_OPEN),
+            ("hotkey_settings", Hotkeys.DEFAULT_HOTKEY_SETTINGS),
+            ("hotkey_quit", Hotkeys.DEFAULT_HOTKEY_QUIT),
+            ("confirm_on_quit", True)
+        ]:
+            self.settings.setdefault(key, default)
     
     def save_settings(self) -> None:
         """Save settings to file"""

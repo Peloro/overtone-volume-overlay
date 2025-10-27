@@ -50,86 +50,80 @@ class SettingsDialog(QDialog):
         self.setLayout(layout)
         self.apply_styles()
     
+    def _create_group_with_form(self, title: str, form_rows: list) -> QGroupBox:
+        """Create a group box with a form layout"""
+        group = QGroupBox(title)
+        layout = QFormLayout()
+        for row in form_rows:
+            if isinstance(row, tuple):
+                layout.addRow(*row)
+            else:
+                layout.addRow(row)
+        group.setLayout(layout)
+        return group
+    
     def create_settings_tab(self):
         """Create the settings tab content"""
         settings_widget = QVBoxLayout()
         
-        size_group = QGroupBox("Overlay Size")
-        size_layout = QFormLayout()
-        
+        # Size group
         self.width_spin = QSpinBox()
-        self.width_spin.setMinimum(UIConstants.MIN_OVERLAY_WIDTH)
-        self.width_spin.setMaximum(UIConstants.MAX_OVERLAY_WIDTH)
+        self.width_spin.setRange(UIConstants.MIN_OVERLAY_WIDTH, UIConstants.MAX_OVERLAY_WIDTH)
         self.width_spin.setValue(self.app.settings_manager.overlay_width)
         self.width_spin.valueChanged.connect(self.on_width_changed)
         
         self.height_spin = QSpinBox()
-        self.height_spin.setMinimum(UIConstants.MIN_OVERLAY_HEIGHT)
-        self.height_spin.setMaximum(UIConstants.MAX_OVERLAY_HEIGHT)
+        self.height_spin.setRange(UIConstants.MIN_OVERLAY_HEIGHT, UIConstants.MAX_OVERLAY_HEIGHT)
         self.height_spin.setValue(self.app.settings_manager.overlay_height)
         self.height_spin.valueChanged.connect(self.on_height_changed)
         
-        size_layout.addRow("Width:", self.width_spin)
-        size_layout.addRow("Height:", self.height_spin)
-        size_group.setLayout(size_layout)
+        size_group = self._create_group_with_form("Overlay Size", [
+            ("Width:", self.width_spin),
+            ("Height:", self.height_spin)
+        ])
         
-        appearance_group = QGroupBox("Appearance")
-        appearance_layout = QFormLayout()
-        
+        # Appearance group
         self.opacity_spin = QDoubleSpinBox()
-        self.opacity_spin.setMinimum(UIConstants.MIN_OPACITY)
-        self.opacity_spin.setMaximum(UIConstants.MAX_OPACITY)
+        self.opacity_spin.setRange(UIConstants.MIN_OPACITY, UIConstants.MAX_OPACITY)
         self.opacity_spin.setSingleStep(0.05)
-        self.opacity_spin.setValue(self.app.settings_manager.overlay_opacity)
         self.opacity_spin.setDecimals(2)
+        self.opacity_spin.setValue(self.app.settings_manager.overlay_opacity)
         self.opacity_spin.valueChanged.connect(self.on_opacity_changed)
         
-        appearance_layout.addRow("Opacity:", self.opacity_spin)
-        appearance_group.setLayout(appearance_layout)
+        appearance_group = self._create_group_with_form("Appearance", [("Opacity:", self.opacity_spin)])
         
-        behavior_group = QGroupBox("Behavior")
-        behavior_layout = QFormLayout()
-        
+        # Behavior group
         self.confirm_quit_checkbox = QCheckBox("Ask for confirmation when quitting")
         self.confirm_quit_checkbox.setChecked(self.app.settings_manager.confirm_on_quit)
         self.confirm_quit_checkbox.setStyleSheet("QCheckBox { color: white; }")
-        
-        behavior_layout.addRow(self.confirm_quit_checkbox)
-        behavior_group.setLayout(behavior_layout)
-        
-        # Connect confirm quit checkbox to save immediately
         self.confirm_quit_checkbox.stateChanged.connect(self.on_confirm_quit_changed)
         
-        hotkey_group = QGroupBox("Hotkeys")
-        hotkey_layout = QFormLayout()
+        behavior_group = self._create_group_with_form("Behavior", [self.confirm_quit_checkbox])
         
+        # Hotkey group
         self.hotkey_open_edit = QLineEdit(self.app.settings_manager.hotkey_open)
-        self.hotkey_open_edit.textChanged.connect(self.on_hotkey_changed)
-        
         self.hotkey_settings_edit = QLineEdit(self.app.settings_manager.hotkey_settings)
-        self.hotkey_settings_edit.textChanged.connect(self.on_hotkey_changed)
-        
         self.hotkey_quit_edit = QLineEdit(self.app.settings_manager.hotkey_quit)
-        self.hotkey_quit_edit.textChanged.connect(self.on_hotkey_changed)
         
-        hotkey_layout.addRow("Open Overlay:", self.hotkey_open_edit)
-        hotkey_layout.addRow("Open Settings:", self.hotkey_settings_edit)
-        hotkey_layout.addRow("Quit Application:", self.hotkey_quit_edit)
+        for edit in (self.hotkey_open_edit, self.hotkey_settings_edit, self.hotkey_quit_edit):
+            edit.textChanged.connect(self.on_hotkey_changed)
         
         hotkey_info = QLabel("Format: ctrl+shift+key, alt+key, etc.")
         hotkey_info.setStyleSheet("color: gray; font-size: 10px;")
-        hotkey_layout.addRow(hotkey_info)
         
         hotkey_warning = QLabel("Note: Changes apply immediately")
         hotkey_warning.setStyleSheet("color: #42a5f5; font-size: 10px; font-style: italic;")
-        hotkey_layout.addRow(hotkey_warning)
         
-        hotkey_group.setLayout(hotkey_layout)
+        hotkey_group = self._create_group_with_form("Hotkeys", [
+            ("Open Overlay:", self.hotkey_open_edit),
+            ("Open Settings:", self.hotkey_settings_edit),
+            ("Quit Application:", self.hotkey_quit_edit),
+            hotkey_info,
+            hotkey_warning
+        ])
         
-        settings_widget.addWidget(size_group)
-        settings_widget.addWidget(appearance_group)
-        settings_widget.addWidget(behavior_group)
-        settings_widget.addWidget(hotkey_group)
+        for group in (size_group, appearance_group, behavior_group, hotkey_group):
+            settings_widget.addWidget(group)
         settings_widget.addStretch()
         
         container = QWidget()
@@ -289,9 +283,3 @@ class SettingsDialog(QDialog):
             "hotkey_quit": self.hotkey_quit_edit.text(),
         })
         self.app.setup_hotkeys()
-    
-    def save_settings(self):
-        """Deprecated - settings now save automatically"""
-        # This method is kept for backwards compatibility but does nothing
-        # All settings are saved immediately when changed
-        self.close()

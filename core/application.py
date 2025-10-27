@@ -45,14 +45,8 @@ class VolumeOverlayApp:
         """Validate hotkey format before registration"""
         if not hotkey or not isinstance(hotkey, str):
             return False
-        # Basic validation: check if it contains valid modifier keys
-        valid_modifiers = ['ctrl', 'shift', 'alt', 'win']
         parts = hotkey.lower().split('+')
-        if len(parts) < 2:
-            return False
-        # At least one modifier and one key
-        has_modifier = any(mod in parts for mod in valid_modifiers)
-        return has_modifier
+        return len(parts) >= 2 and any(mod in parts for mod in ('ctrl', 'shift', 'alt', 'win'))
     
     def _unregister_hotkeys(self) -> None:
         """Unregister only our hotkeys"""
@@ -60,34 +54,25 @@ class VolumeOverlayApp:
             try:
                 keyboard.remove_hotkey(hotkey_ref)
             except (KeyError, ValueError):
-                pass  # Hotkey wasn't registered or already removed
+                pass
         self._registered_hotkeys.clear()
     
     def setup_hotkeys(self) -> None:
         """Setup global hotkeys"""
-        # First, unregister existing hotkeys
         self._unregister_hotkeys()
         
-        hotkeys_to_register = [
+        for hotkey, callback in [
             (self.settings_manager.hotkey_open, self.hotkey_handler.toggle_signal.emit),
             (self.settings_manager.hotkey_settings, self.hotkey_handler.settings_signal.emit),
             (self.settings_manager.hotkey_quit, self.hotkey_handler.quit_signal.emit),
-        ]
-        
-        for hotkey, callback in hotkeys_to_register:
-            if not self._validate_hotkey_format(hotkey):
+        ]:
+            if self._validate_hotkey_format(hotkey):
+                try:
+                    self._registered_hotkeys.append(keyboard.add_hotkey(hotkey, callback, suppress=False))
+                except Exception as e:
+                    print(f"Error registering hotkey '{hotkey}': {e}")
+            else:
                 print(f"Warning: Invalid hotkey format: {hotkey}")
-                continue
-            
-            try:
-                hotkey_ref = keyboard.add_hotkey(
-                    hotkey,
-                    callback,
-                    suppress=False
-                )
-                self._registered_hotkeys.append(hotkey_ref)
-            except Exception as e:
-                print(f"Error registering hotkey '{hotkey}': {e}")
     
     def toggle_overlay(self) -> None:
         """Toggle overlay visibility"""
@@ -121,17 +106,13 @@ class VolumeOverlayApp:
     
     def update_settings(self) -> None:
         """Update application with new settings"""
-        self.overlay.resize(
-            self.settings_manager.overlay_width,
-            self.settings_manager.overlay_height
-        )
+        self.overlay.resize(self.settings_manager.overlay_width, self.settings_manager.overlay_height)
         self.overlay.update_background_opacity()
         self.setup_hotkeys()
         self.settings_manager.save_settings()
     
     def confirm_quit(self) -> None:
         """Show confirmation dialog before quitting (if enabled in settings)"""
-        # Check if confirmation is enabled
         if not self.settings_manager.confirm_on_quit:
             self.quit_application()
             return
@@ -142,57 +123,32 @@ class VolumeOverlayApp:
         msg_box.setIcon(QMessageBox.Question)
         msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         msg_box.setDefaultButton(QMessageBox.No)
-        
         msg_box.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.Dialog)
-        
         msg_box.setStyleSheet("""
-            QMessageBox {
-                background-color: #2b2b2b;
-                color: white;
-            }
-            QMessageBox QLabel {
-                color: white;
-            }
+            QMessageBox { background-color: #2b2b2b; color: white; }
+            QMessageBox QLabel { color: white; }
             QPushButton {
-                background-color: #424242;
-                color: white;
-                border: 1px solid #666;
-                border-radius: 3px;
-                padding: 5px 15px;
-                min-width: 60px;
+                background-color: #424242; color: white; border: 1px solid #666;
+                border-radius: 3px; padding: 5px 15px; min-width: 60px;
             }
-            QPushButton:hover {
-                background-color: #555;
-            }
-            QPushButton:default {
-                background-color: #1e88e5;
-                border: 1px solid #1565c0;
-            }
-            QPushButton:default:hover {
-                background-color: #42a5f5;
-            }
+            QPushButton:hover { background-color: #555; }
+            QPushButton:default { background-color: #1e88e5; border: 1px solid #1565c0; }
+            QPushButton:default:hover { background-color: #42a5f5; }
         """)
         
-        msg_box.show()
-        msg_box.raise_()
-        msg_box.activateWindow()
-        
-        result = msg_box.exec_()
-        if result == QMessageBox.Yes:
+        if msg_box.exec_() == QMessageBox.Yes:
             self.quit_application()
     
     def quit_application(self) -> None:
         """Quit the application"""
         self.refresh_timer.stop()
-        
-        # Unregister our hotkeys
         self._unregister_hotkeys()
-        
-        # Cleanup audio controller
         if hasattr(self, 'audio_controller'):
             self.audio_controller.cleanup()
         
-        self.tray_icon.hide()
-        self.overlay.close()
-        self.settings_dialog.close()
+        for widget in (self.tray_icon, self.overlay, self.settings_dialog):
+            if hasattr(widget, 'hide'):
+                widget.hide()
+            if hasattr(widget, 'close'):
+                widget.close()
         sys.exit(0)

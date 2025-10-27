@@ -35,32 +35,14 @@ class VolumeOverlay(QWidget):
     
     def init_ui(self):
         """Initialize the UI"""
-        self.setWindowFlags(
-            Qt.WindowStaysOnTopHint | 
-            Qt.FramelessWindowHint | 
-            Qt.Tool
-        )
-        
+        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.resize(
-            self.app.settings_manager.overlay_width,
-            self.app.settings_manager.overlay_height
-        )
-        
+        self.resize(self.app.settings_manager.overlay_width, self.app.settings_manager.overlay_height)
         self.move(0, 0)
-        
-        self.setMinimumSize(
-            UIConstants.MIN_OVERLAY_WIDTH,
-            UIConstants.MIN_OVERLAY_HEIGHT
-        )
+        self.setMinimumSize(UIConstants.MIN_OVERLAY_WIDTH, UIConstants.MIN_OVERLAY_HEIGHT)
         
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(
-            UIConstants.LAYOUT_MARGIN,
-            UIConstants.LAYOUT_MARGIN,
-            UIConstants.LAYOUT_MARGIN,
-            UIConstants.LAYOUT_MARGIN
-        )
+        main_layout.setContentsMargins(*[UIConstants.LAYOUT_MARGIN] * 4)
         main_layout.setSizeConstraint(main_layout.SetNoConstraint)
         
         self.title_bar = self._create_title_bar()
@@ -69,26 +51,16 @@ class VolumeOverlay(QWidget):
         self.master_control = MasterVolumeControl(self.app.audio_controller)
         main_layout.addWidget(self.master_control)
         
-        # Add filter/search bar
         self.filter_bar = self._create_filter_bar()
         main_layout.addWidget(self.filter_bar)
         
         self.container = QFrame()
         self.container.setMinimumHeight(0)
-        self.container.setSizePolicy(
-            self.container.sizePolicy().horizontalPolicy(),
-            self.container.sizePolicy().Ignored
-        )
+        self.container.setSizePolicy(self.container.sizePolicy().horizontalPolicy(), self.container.sizePolicy().Ignored)
         self.container_layout = QVBoxLayout(self.container)
         self.container_layout.setAlignment(Qt.AlignTop)
-        self.container_layout.setContentsMargins(
-            UIConstants.FRAME_MARGIN,
-            UIConstants.FRAME_MARGIN,
-            UIConstants.FRAME_MARGIN,
-            UIConstants.FRAME_MARGIN
-        )
+        self.container_layout.setContentsMargins(*[UIConstants.FRAME_MARGIN] * 4)
         self.container_layout.setSpacing(UIConstants.FRAME_SPACING)
-        
         self.container.setStyleSheet(StyleSheets.get_frame_stylesheet())
         
         main_layout.addWidget(self.container, 1)
@@ -97,86 +69,62 @@ class VolumeOverlay(QWidget):
         main_layout.addWidget(self.pagination_frame)
         
         self.setLayout(main_layout)
-        
         self.setObjectName("VolumeOverlay")
         self.setStyleSheet(StyleSheets.get_overlay_stylesheet())
         self.update_background_opacity()
+    
+    def _create_button(self, text: str, callback, tooltip: str, stylesheet: str) -> QPushButton:
+        """Create a standard button with common properties"""
+        btn = QPushButton(text)
+        btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_SIZE)
+        btn.setStyleSheet(stylesheet)
+        btn.clicked.connect(callback)
+        btn.setToolTip(tooltip)
+        return btn
     
     def _create_title_bar(self) -> QFrame:
         """Create the title bar with dragging and control buttons"""
         title_bar = QFrame()
         title_bar.setCursor(Qt.SizeAllCursor)
         title_layout = QHBoxLayout(title_bar)
-        title_layout.setContentsMargins(
-            UIConstants.FRAME_MARGIN,
-            0,
-            UIConstants.FRAME_MARGIN,
-            0,
-        )
+        title_layout.setContentsMargins(UIConstants.FRAME_MARGIN, 0, UIConstants.FRAME_MARGIN, 0)
 
         title_label = QLabel("Overtone")
         title_label.setStyleSheet(StyleSheets.get_title_label_stylesheet())
-        
-        settings_btn = QPushButton("⚙")
-        settings_btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_SIZE)
-        settings_btn.setStyleSheet(StyleSheets.get_settings_button_stylesheet())
-        settings_btn.clicked.connect(self.app.show_settings)
-        settings_btn.setToolTip("Settings")
-        
-        minimize_btn = QPushButton("—")
-        minimize_btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_SIZE)
-        minimize_btn.setStyleSheet(StyleSheets.get_minimize_button_stylesheet())
-        minimize_btn.clicked.connect(self.hide)
-        minimize_btn.setToolTip("Minimize to tray")
-        
-        close_btn = QPushButton("×")
-        close_btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_SIZE)
-        close_btn.setStyleSheet(StyleSheets.get_close_button_stylesheet())
-        close_btn.clicked.connect(self.app.confirm_quit)
-        close_btn.setToolTip("Quit application")
-
         title_layout.addWidget(title_label)
         title_layout.addStretch()
-        title_layout.addWidget(settings_btn)
-        title_layout.addWidget(minimize_btn)
-        title_layout.addWidget(close_btn)
         
-        title_bar.setStyleSheet(StyleSheets.get_frame_stylesheet(
-            bg_color=Colors.TITLE_BAR_BG
-        ))
+        for text, callback, tooltip, stylesheet in [
+            ("⚙", self.app.show_settings, "Settings", StyleSheets.get_settings_button_stylesheet()),
+            ("—", self.hide, "Minimize to tray", StyleSheets.get_minimize_button_stylesheet()),
+            ("×", self.app.confirm_quit, "Quit application", StyleSheets.get_close_button_stylesheet())
+        ]:
+            title_layout.addWidget(self._create_button(text, callback, tooltip, stylesheet))
         
+        title_bar.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.TITLE_BAR_BG))
         return title_bar
     
     def _create_filter_bar(self) -> QFrame:
         """Create the search/filter bar"""
         filter_frame = QFrame()
         filter_layout = QHBoxLayout(filter_frame)
-        filter_layout.setContentsMargins(
-            UIConstants.FRAME_MARGIN,
-            UIConstants.FRAME_MARGIN,
-            UIConstants.FRAME_MARGIN,
-            UIConstants.FRAME_MARGIN
-        )
+        filter_layout.setContentsMargins(*[UIConstants.FRAME_MARGIN] * 4)
         
-        # Search input field
         self.filter_input = QLineEdit()
         self.filter_input.setPlaceholderText("Filter applications...")
         self.filter_input.setStyleSheet(StyleSheets.get_filter_input_stylesheet())
         self.filter_input.textChanged.connect(self.on_filter_changed)
         
-        # Clear button
         self.clear_filter_btn = QPushButton("×")
         self.clear_filter_btn.setFixedSize(UIConstants.BUTTON_HEIGHT, UIConstants.BUTTON_HEIGHT)
         self.clear_filter_btn.setStyleSheet(StyleSheets.get_clear_filter_button_stylesheet())
         self.clear_filter_btn.clicked.connect(self.clear_filter)
-        self.clear_filter_btn.setVisible(False)  # Hidden initially
+        self.clear_filter_btn.setVisible(False)
         self.clear_filter_btn.setToolTip("Clear filter")
         
         filter_layout.addWidget(self.filter_input)
         filter_layout.addWidget(self.clear_filter_btn)
-        
         filter_frame.setStyleSheet(StyleSheets.get_frame_stylesheet())
-        
         return filter_frame
     
     def _create_pagination_controls(self) -> QFrame:
@@ -184,28 +132,22 @@ class VolumeOverlay(QWidget):
         pagination_frame = QFrame()
         pagination_layout = QHBoxLayout(pagination_frame)
         
-        self.prev_btn = QPushButton("◀")
+        self.prev_btn = self._create_button("◀", self.previous_page, "", StyleSheets.get_pagination_button_stylesheet())
         self.prev_btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
-        self.prev_btn.setStyleSheet(StyleSheets.get_pagination_button_stylesheet())
-        self.prev_btn.clicked.connect(self.previous_page)
         
         self.page_label = QLabel("1 / 1")
         self.page_label.setStyleSheet(StyleSheets.get_page_label_stylesheet())
         self.page_label.setAlignment(Qt.AlignCenter)
         
-        self.next_btn = QPushButton("▶")
+        self.next_btn = self._create_button("▶", self.next_page, "", StyleSheets.get_pagination_button_stylesheet())
         self.next_btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
-        self.next_btn.setStyleSheet(StyleSheets.get_pagination_button_stylesheet())
-        self.next_btn.clicked.connect(self.next_page)
         
         pagination_layout.addStretch()
-        pagination_layout.addWidget(self.prev_btn)
-        pagination_layout.addWidget(self.page_label)
-        pagination_layout.addWidget(self.next_btn)
+        for widget in (self.prev_btn, self.page_label, self.next_btn):
+            pagination_layout.addWidget(widget)
         pagination_layout.addStretch()
         
         pagination_frame.setStyleSheet(StyleSheets.get_frame_stylesheet())
-        
         return pagination_frame
     
     def update_background_opacity(self):
@@ -219,8 +161,7 @@ class VolumeOverlay(QWidget):
         """Handle filter text change"""
         self.filter_text = text.lower().strip()
         self.clear_filter_btn.setVisible(bool(self.filter_text))
-        self.current_page = 0  # Reset to first page when filter changes
-        # Debounce filtering to avoid recomputing on every keystroke
+        self.current_page = 0
         self._filter_timer.start(UIConstants.FILTER_DEBOUNCE_MS)
     
     def clear_filter(self):
@@ -229,14 +170,9 @@ class VolumeOverlay(QWidget):
     
     def apply_filter(self) -> None:
         """Apply the current filter to sessions"""
-        if not self.filter_text:
-            self.filtered_sessions = self.all_sessions
-        else:
-            self.filtered_sessions = [
-                session for session in self.all_sessions
-                if self.filter_text in session['name'].lower()
-            ]
-        # Sort sessions alphabetically by name (case-insensitive)
+        self.filtered_sessions = self.all_sessions if not self.filter_text else [
+            s for s in self.all_sessions if self.filter_text in s['name'].lower()
+        ]
         self.filtered_sessions.sort(key=lambda s: s['name'].lower())
         self.update_page_display()
     
@@ -247,90 +183,66 @@ class VolumeOverlay(QWidget):
     
     def get_apps_per_page(self) -> int:
         """Calculate how many apps can fit in current window height"""
-        available_height = self.height() - UIConstants.RESERVED_HEIGHT
-        
-        apps_per_page = max(1, available_height // UIConstants.APP_CONTROL_HEIGHT)
-        return apps_per_page
+        return max(1, (self.height() - UIConstants.RESERVED_HEIGHT) // UIConstants.APP_CONTROL_HEIGHT)
     
     def update_page_display(self) -> None:
         """Update the displayed applications based on current page"""
         if not self.filtered_sessions:
             self._clear_all_controls()
-            # Show different message if filtering vs no apps
-            if self.filter_text and self.all_sessions:
-                self.page_label.setText("No matches")
-            else:
-                self.page_label.setText("0 / 0")
+            self.page_label.setText("No matches" if self.filter_text and self.all_sessions else "0 / 0")
             self.prev_btn.setEnabled(False)
             self.next_btn.setEnabled(False)
             return
         
         apps_per_page = self.get_apps_per_page()
-        total_apps = len(self.filtered_sessions)
-        total_pages = max(1, (total_apps + apps_per_page - 1) // apps_per_page)
-        
+        total_pages = max(1, (len(self.filtered_sessions) + apps_per_page - 1) // apps_per_page)
         self.current_page = max(0, min(self.current_page, total_pages - 1))
         
         start_idx = self.current_page * apps_per_page
-        end_idx = min(start_idx + apps_per_page, total_apps)
-        page_sessions = self.filtered_sessions[start_idx:end_idx]
-
+        page_sessions = self.filtered_sessions[start_idx:start_idx + apps_per_page]
         current_names = {session['name'] for session in page_sessions}
-        displayed_names = set(self.app_controls.keys())
 
         # Remove controls no longer on this page
-        removed = displayed_names - current_names
-        if removed:
-            for name in removed:
-                widget = self.app_controls.pop(name, None)
-                if widget:
-                    self.container_layout.removeWidget(widget)
-                    widget.setParent(None)
-                    widget.deleteLater()
+        for name in set(self.app_controls.keys()) - current_names:
+            if widget := self.app_controls.pop(name, None):
+                self.container_layout.removeWidget(widget)
+                widget.setParent(None)
+                widget.deleteLater()
 
         # Add or update controls for sessions on this page
         for session in page_sessions:
             name = session['name']
-            control = self.app_controls.get(name)
-            if control is None:
+            if control := self.app_controls.get(name):
+                if hasattr(control, 'update_session'):
+                    control.update_session(session)
+            else:
                 control = AppVolumeControl(session, self.app.audio_controller)
                 self.container_layout.addWidget(control)
                 self.app_controls[name] = control
-            else:
-                # Update existing control to reflect new volume/mute
-                if hasattr(control, 'update_session'):
-                    control.update_session(session)
         
-        # Ensure there is a stretch at the end (remove existing stretches first)
         self._ensure_container_stretch()
-        
         self.page_label.setText(f"{self.current_page + 1} / {total_pages}")
         self.prev_btn.setEnabled(self.current_page > 0)
         self.next_btn.setEnabled(self.current_page < total_pages - 1)
     
     def _clear_all_controls(self) -> None:
         """Clear all app controls from layout"""
-        for widget in self.app_controls.values():
+        for widget in list(self.app_controls.values()):
             self.container_layout.removeWidget(widget)
-            widget.setParent(None)
             widget.deleteLater()
         self.app_controls.clear()
-        # Remove all remaining items (including stretches)
+        
         while self.container_layout.count():
-            item = self.container_layout.takeAt(0)
-            w = item.widget()
-            if w is not None:
-                w.deleteLater()
+            if item := self.container_layout.takeAt(0):
+                if widget := item.widget():
+                    widget.deleteLater()
         self._ensure_container_stretch()
 
     def _ensure_container_stretch(self) -> None:
         """Ensure there is a stretch at the end of the container layout"""
-        count = self.container_layout.count()
-        if count == 0:
-            self.container_layout.addStretch()
-            return
-        last_item = self.container_layout.itemAt(count - 1)
-        if last_item is None or last_item.spacerItem() is None:
+        if not (count := self.container_layout.count()) or not (
+            last_item := self.container_layout.itemAt(count - 1)
+        ) or not last_item.spacerItem():
             self.container_layout.addStretch()
     
     def previous_page(self) -> None:

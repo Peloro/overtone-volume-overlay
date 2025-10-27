@@ -28,7 +28,6 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
     def update_session(self, session: Dict[str, Any]) -> None:
         """Update UI state from a refreshed session without recreating the widget"""
         self.session = session
-        # Update slider and text only if values changed to avoid emitting signals excessively
         new_val = int(session['volume'] * 100)
         new_muted = session.get('muted', False)
         
@@ -38,7 +37,6 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
             self.slider.blockSignals(False)
         if self.volume_text and self.volume_text.text() != str(new_val):
             self.volume_text.setText(str(new_val))
-        # Update mute icon to reflect current mute state
         if self.is_muted != new_muted:
             self.is_muted = new_muted
             self.update_mute_icon(new_muted)
@@ -46,17 +44,9 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
     def init_ui(self):
         """Initialize the UI for a single app control"""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(
-            UIConstants.FRAME_MARGIN,
-            UIConstants.FRAME_MARGIN,
-            UIConstants.FRAME_MARGIN,
-            UIConstants.FRAME_MARGIN
-        )
+        layout.setContentsMargins(*[UIConstants.FRAME_MARGIN] * 4)
         layout.setSpacing(UIConstants.CONTROL_SPACING)
-        
-        self.setStyleSheet(StyleSheets.get_frame_stylesheet(
-            bg_color=Colors.APP_CONTROL_BG
-        ))
+        self.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.APP_CONTROL_BG))
         
         name_label = QLabel(self.session['name'])
         name_label.setStyleSheet(StyleSheets.get_label_stylesheet())
@@ -88,7 +78,6 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         control_layout.addWidget(self.slider)
         control_layout.addWidget(self.volume_text)
         control_layout.addWidget(self.mute_btn)
-        
         layout.addLayout(control_layout)
     
     def on_slider_changed(self, value: int) -> None:

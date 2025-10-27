@@ -31,37 +31,21 @@ class BaseVolumeControl(QWidget):
             self.mute_btn.setText("🔇" if is_muted else "🔊")
     
     def handle_volume_slider_change(self, value: int, set_volume_callback: Callable[[float], bool]) -> None:
-        """
-        Handle slider value change with common logic
-        
-        Args:
-            value: New volume value (0-100)
-            set_volume_callback: Function to call to actually set the volume
-        """
+        """Handle slider value change with common logic"""
         set_volume_callback(value / 100.0)
-        
         if self.volume_text:
             self.volume_text.setText(str(value))
-        
         if value > 0:
             self.previous_volume = value
     
     def handle_mute_toggle(self, get_mute_callback: Callable[[], bool], 
                           set_mute_callback: Callable[[bool], bool]) -> None:
-        """
-        Handle mute button click with common logic
-        
-        Args:
-            get_mute_callback: Function to get current mute state
-            set_mute_callback: Function to call to set mute state (True/False)
-        """
+        """Handle mute button click with common logic"""
         if not self.slider or not self.volume_text:
             return
         
         try:
-            current_mute = get_mute_callback()
-            new_mute = not current_mute
-            
+            new_mute = not get_mute_callback()
             if set_mute_callback(new_mute):
                 self.is_muted = new_mute
                 self.update_mute_icon(new_mute)
@@ -74,13 +58,10 @@ class BaseVolumeControl(QWidget):
             return
         
         try:
-            value = int(self.volume_text.text())
-            value = max(0, min(100, value))
+            value = max(0, min(100, int(self.volume_text.text())))
             self.slider.setValue(value)
         except ValueError:
-            # Restore valid value and provide visual feedback
             self.volume_text.setText(str(self.slider.value()))
-            # Flash red to indicate invalid input
             original_style = self.volume_text.styleSheet()
             self.volume_text.setStyleSheet(original_style + "border: 2px solid #f44336;")
             QTimer.singleShot(UIConstants.ERROR_FLASH_DURATION_MS, 

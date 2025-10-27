@@ -28,12 +28,7 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
     def init_ui(self):
         """Initialize the master volume control UI"""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(
-            UIConstants.FRAME_MARGIN,
-            UIConstants.FRAME_MARGIN,
-            UIConstants.FRAME_MARGIN,
-            UIConstants.FRAME_MARGIN
-        )
+        layout.setContentsMargins(*[UIConstants.FRAME_MARGIN] * 4)
         layout.setSpacing(UIConstants.CONTROL_SPACING)
         
         master_label = QLabel("🔊 System Volume")
@@ -45,7 +40,6 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(0)
         self.slider.setMaximum(100)
-        # Use the master volume fetched earlier for initial UI state
         self.slider.setValue(int(self._initial_master_volume * 100))
         self.slider.setStyleSheet(StyleSheets.get_master_slider_stylesheet())
         self.slider.valueChanged.connect(self.on_volume_changed)
@@ -66,12 +60,9 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         master_control_layout.addWidget(self.slider)
         master_control_layout.addWidget(self.volume_text)
         master_control_layout.addWidget(self.mute_btn)
-        
         layout.addLayout(master_control_layout)
         
-        self.setStyleSheet(StyleSheets.get_frame_stylesheet(
-            bg_color=Colors.MASTER_FRAME_BG
-        ))
+        self.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.MASTER_FRAME_BG))
     
     def on_volume_changed(self, value: int) -> None:
         """Handle master volume slider change"""

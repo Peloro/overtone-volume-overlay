@@ -80,90 +80,47 @@ class AudioController:
     
     def _get_file_description(self, exe_path: str) -> Optional[str]:
         """Get the file description from executable metadata"""
-        # Check cache first
-        cached = self._file_desc_cache.get(exe_path)
-        if cached:
+        if cached := self._file_desc_cache.get(exe_path):
             return cached
         try:
             language, codepage = win32api.GetFileVersionInfo(exe_path, '\\VarFileInfo\\Translation')[0]
             string_file_info = f'\\StringFileInfo\\{language:04X}{codepage:04X}\\'
             
-            # Try FileDescription first (this is usually the display name)
-            description = win32api.GetFileVersionInfo(exe_path, string_file_info + 'FileDescription')
-            if description:
-                desc = description.strip()
-                self._file_desc_cache[exe_path] = desc
-                return desc
-            
-            # Fallback to ProductName
-            product_name = win32api.GetFileVersionInfo(exe_path, string_file_info + 'ProductName')
-            if product_name:
-                name = product_name.strip()
-                self._file_desc_cache[exe_path] = name
-                return name
+            for key in ('FileDescription', 'ProductName'):
+                if desc := win32api.GetFileVersionInfo(exe_path, string_file_info + key):
+                    self._file_desc_cache[exe_path] = desc.strip()
+                    return self._file_desc_cache[exe_path]
         except:
             pass
-        
         return None
     
     def _get_window_title_by_pid(self, pid: int) -> Optional[str]:
         """Get the main window title for a given process ID"""
-        window_title = None
-        
-        def callback(hwnd, titles):
-            if win32gui.IsWindowVisible(hwnd):
-                _, found_pid = win32process.GetWindowThreadProcessId(hwnd)
-                if found_pid == pid:
-                    title = win32gui.GetWindowText(hwnd)
-                    if title:  # Only add non-empty titles
-                        titles.append(title)
-        
         titles = []
         try:
-            win32gui.EnumWindows(callback, titles)
-            if titles:
-                # Get the first non-empty title (usually the main window)
-                window_title = titles[0]
+            win32gui.EnumWindows(lambda hwnd, t: (
+                t.append(title) if win32gui.IsWindowVisible(hwnd) and 
+                win32process.GetWindowThreadProcessId(hwnd)[1] == pid and 
+                (title := win32gui.GetWindowText(hwnd)) else None
+            ), titles)
+            return titles[0] if titles else None
         except Exception as e:
             print(f"Error getting window title for PID {pid}: {e}")
-        
-        return window_title
+        return None
     
     def _get_display_name(self, process_name: str, pid: int, process) -> str:
         """Get display name for a process, trying multiple methods"""
-        # Serve from cache if fresh
         now = time()
-        cached = self._display_name_cache.get(pid)
-        ts = self._name_timestamps.get(pid, 0)
-        if cached and (now - ts) < self._name_ttl_seconds:
+        if (cached := self._display_name_cache.get(pid)) and (now - self._name_timestamps.get(pid, 0)) < self._name_ttl_seconds:
             return cached
 
-        display_name = None
+        # Try window title, then file description, finally process name
+        display_name = self._get_window_title_by_pid(pid) or (
+            self._get_file_description(exe_path) 
+            if (exe_path := getattr(process, 'exe', lambda: None)()) and os.path.exists(exe_path)
+            else None
+        ) or (process_name[:-4] if process_name.lower().endswith('.exe') else process_name)
         
-        # Method 1: Try to get window title
-        window_title = self._get_window_title_by_pid(pid)
-        if window_title:
-            display_name = window_title
-        
-        # Method 2: If no window title, try to get file description from executable metadata
-        if not display_name:
-            try:
-                exe_path = process.exe()
-                if exe_path and os.path.exists(exe_path):
-                    file_desc = self._get_file_description(exe_path)
-                    if file_desc:
-                        display_name = file_desc
-            except:
-                pass
-        
-        # Method 3: Fallback to process name without .exe extension
-        if not display_name:
-            if process_name.lower().endswith('.exe'):
-                display_name = process_name[:-4]
-            else:
-                display_name = process_name
-        
-        # Cache the computed name
         self._display_name_cache[pid] = display_name
         self._name_timestamps[pid] = now
         return display_name
@@ -224,124 +181,60 @@ class AudioController:
         
         return sessions
     
+    def _get_or_refresh_session(self, pid: int):
+        """Get session from cache or refresh from audio sessions"""
+        if session := self._pid_to_session.get(pid):
+            try:
+                # Test if session is still valid
+                session.SimpleAudioVolume.GetMute()
+                return session
+            except Exception:
+                self._pid_to_session.pop(pid, None)
+        
+        # Refresh from all sessions
+        for session in AudioUtilities.GetAllSessions():
+            if session.Process and session.Process.pid == pid:
+                self._pid_to_session[pid] = session
+                return session
+        return None
+    
     def set_application_volume(self, pids, volume: float) -> bool:
-        """Set volume for a specific application by PID(s)
-        
-        Args:
-            pids: Either a single PID (int) or a list of PIDs
-            volume: Volume level to set (0.0 to 1.0)
-        """
-        # Normalize to list
-        if isinstance(pids, int):
-            pids = [pids]
-        
-        success = False
+        """Set volume for a specific application by PID(s)"""
+        pids = [pids] if isinstance(pids, int) else pids
         try:
-            for pid in pids:
-                # Try fast path from cache first
-                session = self._pid_to_session.get(pid)
-                if session and session.Process:
-                    try:
-                        session.SimpleAudioVolume.SetMasterVolume(volume, None)
-                        success = True
-                        continue
-                    except Exception:
-                        # Process might have ended, remove from cache
-                        self._pid_to_session.pop(pid, None)
-
-                # Fallback to enumerating all sessions
-                audio_sessions = AudioUtilities.GetAllSessions()
-                for session in audio_sessions:
-                    if session.Process and session.Process.pid == pid:
-                        session.SimpleAudioVolume.SetMasterVolume(volume, None)
-                        # update cache
-                        self._pid_to_session[pid] = session
-                        success = True
-                        break
+            return any(
+                session.SimpleAudioVolume.SetMasterVolume(volume, None) or True
+                for pid in pids if (session := self._get_or_refresh_session(pid))
+            )
         except Exception as e:
             print(f"Error setting volume: {e}")
-        return success
+            return False
     
     def get_application_mute(self, pids) -> bool:
-        """Get mute state for a specific application by PID(s)
-        
-        Args:
-            pids: Either a single PID (int) or a list of PIDs
-            
-        Returns:
-            True if ANY of the sessions are muted
-        """
-        # Normalize to list
-        if isinstance(pids, int):
-            pids = [pids]
-        
+        """Get mute state for a specific application by PID(s) - True if ANY are muted"""
+        pids = [pids] if isinstance(pids, int) else pids
         try:
-            for pid in pids:
-                # Try fast path from cache first
-                session = self._pid_to_session.get(pid)
-                if session and session.Process:
-                    try:
-                        if session.SimpleAudioVolume.GetMute():
-                            return True
-                        continue
-                    except Exception:
-                        # Process might have ended, remove from cache
-                        self._pid_to_session.pop(pid, None)
-
-                # Fallback to enumerating all sessions
-                audio_sessions = AudioUtilities.GetAllSessions()
-                for session in audio_sessions:
-                    if session.Process and session.Process.pid == pid:
-                        mute_state = session.SimpleAudioVolume.GetMute()
-                        # update cache
-                        self._pid_to_session[pid] = session
-                        if mute_state:
-                            return True
-                        break
+            return any(
+                session.SimpleAudioVolume.GetMute()
+                for pid in pids if (session := self._get_or_refresh_session(pid))
+            )
         except Exception as e:
             print(f"Error getting mute state: {e}")
-        return False
+            return False
     
     def set_application_mute(self, pids, mute: bool) -> bool:
-        """Mute or unmute a specific application by PID(s)
-        
-        Args:
-            pids: Either a single PID (int) or a list of PIDs
-            mute: Mute state to set
-        """
-        # Normalize to list
-        if isinstance(pids, int):
-            pids = [pids]
-        
-        success = False
+        """Mute or unmute a specific application by PID(s)"""
+        pids = [pids] if isinstance(pids, int) else pids
         try:
-            for pid in pids:
-                # Try fast path from cache first
-                session = self._pid_to_session.get(pid)
-                if session and session.Process:
-                    try:
-                        session.SimpleAudioVolume.SetMute(mute, None)
-                        success = True
-                        continue
-                    except Exception:
-                        # Process might have ended, remove from cache
-                        self._pid_to_session.pop(pid, None)
-
-                audio_sessions = AudioUtilities.GetAllSessions()
-                for session in audio_sessions:
-                    if session.Process and session.Process.pid == pid:
-                        session.SimpleAudioVolume.SetMute(mute, None)
-                        # update cache
-                        self._pid_to_session[pid] = session
-                        success = True
-                        break
+            return any(
+                session.SimpleAudioVolume.SetMute(mute, None) or True
+                for pid in pids if (session := self._get_or_refresh_session(pid))
+            )
         except Exception as e:
             print(f"Error setting mute: {e}")
-        return success
+            return False
     
     def cleanup(self) -> None:
         """Clean up resources"""
-        self._display_name_cache.clear()
-        self._file_desc_cache.clear()
-        self._pid_to_session.clear()
-        self._name_timestamps.clear()
+        for cache in (self._display_name_cache, self._file_desc_cache, self._pid_to_session, self._name_timestamps):
+            cache.clear()

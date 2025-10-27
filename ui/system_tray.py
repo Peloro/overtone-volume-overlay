@@ -42,7 +42,6 @@ class SystemTrayIcon(QSystemTrayIcon):
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         assets_dir = os.path.join(base_dir, 'assets')
         
-        # Try ICO first on Windows, then PNG
         icon_files = ['icon2.ico', 'icon2.png'] if sys.platform.startswith('win') else ['icon2.png', 'icon2.ico']
 
         for icon_file in icon_files:
@@ -50,18 +49,16 @@ class SystemTrayIcon(QSystemTrayIcon):
             if not os.path.exists(icon_path):
                 continue
 
-            if icon_file.lower().endswith('.ico') and sys.platform.startswith('win'):
-                icon = QIcon(icon_path)
-                if not icon.isNull():
+            # Try ICO on Windows
+            if icon_file.endswith('.ico') and sys.platform.startswith('win'):
+                if not (icon := QIcon(icon_path)).isNull():
                     print(f"Loaded tray icon from ICO: {icon_path}")
                     return icon
 
-            original = QPixmap(icon_path)
-            if original.isNull():
-                continue
-
-            if icon_file.lower().endswith('.png') and not original.hasAlphaChannel():
-                print(f"Skipping PNG without alpha channel: {icon_path}")
+            # Try PNG with alpha channel
+            if (original := QPixmap(icon_path)).isNull() or (
+                icon_file.endswith('.png') and not original.hasAlphaChannel()
+            ):
                 continue
 
             icon = QIcon()
@@ -69,44 +66,38 @@ class SystemTrayIcon(QSystemTrayIcon):
                 canvas = QPixmap(size, size)
                 canvas.fill(Qt.transparent)
                 painter = QPainter(canvas)
-                painter.setRenderHint(QPainter.Antialiasing)
-                painter.setRenderHint(QPainter.SmoothPixmapTransform)
+                painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
                 scaled = original.scaled(size, size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                x = (size - scaled.width()) // 2
-                y = (size - scaled.height()) // 2
-                painter.drawPixmap(x, y, scaled)
+                offset = (size - scaled.width()) // 2, (size - scaled.height()) // 2
+                painter.drawPixmap(*offset, scaled)
                 painter.end()
                 icon.addPixmap(canvas)
 
             print(f"Loaded tray icon with alpha from: {icon_path}")
             return icon
         
+        return self._create_fallback_icon()
+    
+    def _create_fallback_icon(self) -> QIcon:
+        """Create a fallback icon if no icon files are found"""
         pixmap = QPixmap(64, 64)
         pixmap.fill(Qt.transparent)
         
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.Antialiasing)
-        
         painter.setBrush(QColor(30, 136, 229))
         painter.setPen(QColor(30, 136, 229))
         
+        # Speaker box and cone
         painter.drawRect(10, 25, 15, 14)
-        polygon = QPolygon([
-            QPoint(25, 25),
-            QPoint(35, 15),
-            QPoint(35, 49),
-            QPoint(25, 39)
-        ])
-        painter.drawPolygon(polygon)
+        painter.drawPolygon(QPolygon([QPoint(25, 25), QPoint(35, 15), QPoint(35, 49), QPoint(25, 39)]))
         
-        painter.setPen(QColor(30, 136, 229))
-        painter.drawArc(38, 20, 15, 10, 0, 180 * 16)
-        painter.drawArc(38, 34, 15, 10, 180 * 16, 180 * 16)
-        painter.drawArc(45, 15, 15, 15, 0, 180 * 16)
-        painter.drawArc(45, 34, 15, 15, 180 * 16, 180 * 16)
+        # Sound waves
+        for x, y, w, h, start_angle in [(38, 20, 15, 10, 0), (38, 34, 15, 10, 180 * 16), 
+                                         (45, 15, 15, 15, 0), (45, 34, 15, 15, 180 * 16)]:
+            painter.drawArc(x, y, w, h, start_angle, 180 * 16)
         
         painter.end()
-        
         return QIcon(pixmap)
     
     def on_show_overlay_clicked(self) -> None:

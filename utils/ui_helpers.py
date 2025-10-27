@@ -1,7 +1,7 @@
 """
 UI Utilities for common widget operations
 """
-from typing import Callable, Optional
+from typing import Callable
 from PyQt5.QtWidgets import QPushButton
 from config import UIConstants
 
@@ -11,8 +11,8 @@ def create_button(
     callback: Callable,
     tooltip: str = "",
     stylesheet: str = "",
-    fixed_width: Optional[int] = None,
-    fixed_height: Optional[int] = None
+    fixed_width: int = None,
+    fixed_height: int = None
 ) -> QPushButton:
     """
     Create a QPushButton with common properties

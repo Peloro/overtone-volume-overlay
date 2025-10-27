@@ -4,6 +4,7 @@ A system tray application for controlling volume of individual applications
 """
 import sys
 import os
+import traceback
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
@@ -25,8 +26,6 @@ def main() -> int:
         return app.exec_()
     except Exception as e:
         logger.critical(f"Fatal error during initialization: {e}", exc_info=True)
-        import traceback
-        traceback.print_exc()
         
         # Show error dialog to user
         try:

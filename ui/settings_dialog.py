@@ -2,10 +2,9 @@
 Settings Dialog for configuring the application
 """
 import os
-from typing import Optional
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QSpinBox, QDoubleSpinBox, QLineEdit,
-                             QGroupBox, QFormLayout, QCheckBox, QTabWidget, QTextBrowser, QWidget)
+                             QGroupBox, QFormLayout, QCheckBox, QTabWidget, QWidget)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from config import UIConstants, AppInfo

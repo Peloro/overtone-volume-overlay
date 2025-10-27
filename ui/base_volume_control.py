@@ -2,7 +2,7 @@
 Base Volume Control Widget
 Contains shared functionality for volume controls
 """
-from typing import Callable, Optional
+from typing import Callable
 from PyQt5.QtWidgets import QWidget, QSlider, QPushButton, QLineEdit
 from PyQt5.QtCore import Qt, QTimer
 
@@ -15,9 +15,9 @@ class BaseVolumeControl(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.previous_volume: int = 100
-        self.slider: Optional[QSlider] = None
-        self.volume_text: Optional[QLineEdit] = None
-        self.mute_button: Optional[QPushButton] = None
+        self.slider: QSlider = None
+        self.volume_text: QLineEdit = None
+        self.mute_button: QPushButton = None
         self.is_muted: bool = False
     
     def init_volume_state(self, current_volume: int, is_muted: bool = False) -> None:

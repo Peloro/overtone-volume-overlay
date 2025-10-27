@@ -3,9 +3,7 @@ Logging configuration for Overtone Application
 Provides structured logging with file and console outputs
 """
 import logging
-import os
 from logging.handlers import RotatingFileHandler
-from typing import Optional
 
 
 _loggers = {}

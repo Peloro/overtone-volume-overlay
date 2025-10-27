@@ -4,7 +4,6 @@ Coordinates all components and manages application lifecycle
 """
 import sys
 import os
-from typing import Optional
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtGui import QIcon
@@ -21,6 +20,14 @@ logger = get_logger(__name__)
 
 class VolumeOverlayApp:
     """Main application coordinator"""
+    
+    # Hotkey validation constants
+    _VALID_MODIFIERS = {'ctrl', 'shift', 'alt', 'win'}
+    _VALID_KEYS = {
+        'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12',
+        'esc', 'tab', 'space', 'enter', 'backspace', 'delete', 'insert',
+        'home', 'end', 'pageup', 'pagedown', 'up', 'down', 'left', 'right'
+    }
     
     def __init__(self) -> None:
         self.settings_manager = SettingsManager()
@@ -60,26 +67,19 @@ class VolumeOverlayApp:
             return False
         
         # Check for valid modifiers
-        valid_modifiers = {'ctrl', 'shift', 'alt', 'win'}
-        has_modifier = any(mod in parts for mod in valid_modifiers)
+        has_modifier = any(mod in parts for mod in self._VALID_MODIFIERS)
         
         if not has_modifier:
             return False
         
         # Last part should be the key (not a modifier)
         key_part = parts[-1]
-        if key_part in valid_modifiers:
+        if key_part in self._VALID_MODIFIERS:
             logger.warning(f"Hotkey '{hotkey}' has no key specified")
             return False
         
         # Check for valid key length (single char or known key names)
-        valid_keys = {
-            'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12',
-            'esc', 'tab', 'space', 'enter', 'backspace', 'delete', 'insert',
-            'home', 'end', 'pageup', 'pagedown', 'up', 'down', 'left', 'right'
-        }
-        
-        if len(key_part) > 1 and key_part not in valid_keys:
+        if len(key_part) > 1 and key_part not in self._VALID_KEYS:
             logger.warning(f"Hotkey '{hotkey}' has invalid key: {key_part}")
             return False
         

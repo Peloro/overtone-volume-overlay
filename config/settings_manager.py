@@ -4,7 +4,7 @@ Handles loading, saving, and managing application settings
 """
 import json
 import os
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from PyQt5.QtCore import QTimer
 from .ui_constants import UIConstants, Hotkeys
 from utils.logger import get_logger
@@ -19,7 +19,7 @@ class SettingsManager:
         self.settings_file = settings_file
         self.settings: Dict[str, Any] = {}
         self._default_settings = self._get_default_settings()
-        self._save_timer: Optional[QTimer] = None
+        self._save_timer: QTimer = None
         self._save_debounce_ms = 500  # Wait 500ms after last change before saving
         self.load_settings()
     

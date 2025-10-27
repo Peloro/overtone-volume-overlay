@@ -49,19 +49,25 @@ class SystemTrayIcon(QSystemTrayIcon):
 
         for icon_file in icon_files:
             icon_path = os.path.join(assets_dir, icon_file)
+            
+            # Skip if file doesn't exist
             if not os.path.exists(icon_path):
                 continue
 
             # Try ICO on Windows
             if icon_file.endswith('.ico') and sys.platform.startswith('win'):
-                if not (icon := QIcon(icon_path)).isNull():
+                icon = QIcon(icon_path)
+                if not icon.isNull():
                     logger.info(f"Loaded tray icon from ICO: {icon_path}")
                     return icon
+                continue
 
             # Try PNG with alpha channel
-            if (original := QPixmap(icon_path)).isNull() or (
-                icon_file.endswith('.png') and not original.hasAlphaChannel()
-            ):
+            original = QPixmap(icon_path)
+            if original.isNull():
+                continue
+            
+            if icon_file.endswith('.png') and not original.hasAlphaChannel():
                 continue
 
             icon = QIcon()
@@ -83,23 +89,18 @@ class SystemTrayIcon(QSystemTrayIcon):
         return self._create_fallback_icon()
     
     def _create_fallback_icon(self) -> QIcon:
-        """Create a fallback icon if no icon files are found"""
-        pixmap = QPixmap(64, 64)
+        """Create a simple fallback icon if no icon files are found"""
+        pixmap = QPixmap(32, 32)
         pixmap.fill(Qt.transparent)
         
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.Antialiasing)
         painter.setBrush(QColor(30, 136, 229))
-        painter.setPen(QColor(30, 136, 229))
+        painter.setPen(Qt.NoPen)
         
-        # Speaker box and cone
-        painter.drawRect(10, 25, 15, 14)
-        painter.drawPolygon(QPolygon([QPoint(25, 25), QPoint(35, 15), QPoint(35, 49), QPoint(25, 39)]))
-        
-        # Sound waves
-        for x, y, w, h, start_angle in [(38, 20, 15, 10, 0), (38, 34, 15, 10, 180 * 16), 
-                                         (45, 15, 15, 15, 0), (45, 34, 15, 15, 180 * 16)]:
-            painter.drawArc(x, y, w, h, start_angle, 180 * 16)
+        # Simple speaker icon - rectangle and triangle
+        painter.drawRect(8, 12, 8, 8)
+        painter.drawPolygon(QPolygon([QPoint(16, 12), QPoint(24, 8), QPoint(24, 24), QPoint(16, 20)]))
         
         painter.end()
         return QIcon(pixmap)

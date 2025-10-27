@@ -1,7 +1,7 @@
 """
 Main Overtone Overlay Window
 """
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QFrame, QLineEdit)
 from PyQt5.QtCore import Qt, QPoint, QTimer
@@ -24,7 +24,7 @@ class VolumeOverlay(QWidget):
         self.filtered_sessions: List[Dict[str, Any]] = []
         self.current_page: int = 0
         self.drag_position: QPoint = QPoint()
-        self.title_bar: Optional[QFrame] = None
+        self.title_bar: QFrame = None
         self.filter_text: str = ""
         self.filter_visible: bool = False
         
@@ -34,20 +34,6 @@ class VolumeOverlay(QWidget):
         self._filter_timer.timeout.connect(self.apply_filter)
         
         self.init_ui()
-    
-    def __del__(self):
-        """Destructor to clean up resources"""
-        try:
-            self.cleanup_resources()
-        except Exception:
-            pass  # Ignore errors during cleanup
-    
-    def cleanup_resources(self) -> None:
-        """Clean up timers and resources"""
-        if hasattr(self, '_filter_timer') and self._filter_timer:
-            self._filter_timer.stop()
-            self._filter_timer.deleteLater()
-            self._filter_timer = None
     
     def init_ui(self):
         """Initialize the UI"""
@@ -89,6 +75,7 @@ class VolumeOverlay(QWidget):
         self.setLayout(main_layout)
         self.setObjectName("VolumeOverlay")
         self.setStyleSheet(StyleSheets.get_overlay_stylesheet())
+        # Opacity is set via setWindowOpacity in update_background_opacity
         self.update_background_opacity()
     
     def _create_title_bar(self) -> QFrame:
@@ -236,7 +223,8 @@ class VolumeOverlay(QWidget):
 
         # Remove controls no longer on this page
         for name in set(self.app_controls.keys()) - current_names:
-            if widget := self.app_controls.pop(name, None):
+            widget = self.app_controls.pop(name, None)
+            if widget:
                 self.container_layout.removeWidget(widget)
                 widget.setParent(None)
                 widget.deleteLater()
@@ -244,7 +232,8 @@ class VolumeOverlay(QWidget):
         # Add or update controls for sessions on this page
         for session in page_sessions:
             name = session['name']
-            if control := self.app_controls.get(name):
+            control = self.app_controls.get(name)
+            if control:
                 if hasattr(control, 'update_session'):
                     control.update_session(session)
             else:
@@ -270,34 +259,29 @@ class VolumeOverlay(QWidget):
         
         page_sessions = self.filtered_sessions[start_idx:start_idx + apps_per_page]
         self._update_controls_for_sessions(page_sessions)
-        
-        self._ensure_container_stretch()
         self._update_pagination_ui(current_page, total_pages)
     
     def clear_all_controls(self) -> None:
         """Clear all app controls from layout"""
-        for name, widget in list(self.app_controls.items()):
-            self.container_layout.removeWidget(widget)
-            widget.hide()
-            widget.setParent(None)
-            widget.deleteLater()
-        self.app_controls.clear()
+        # First, remove and delete all tracked controls
+        for name in list(self.app_controls.keys()):
+            widget = self.app_controls.pop(name, None)
+            if widget:
+                self.container_layout.removeWidget(widget)
+                widget.setParent(None)
+                widget.deleteLater()
         
-        # Clean up any remaining layout items
+        # Then clean up any remaining layout items (spacers, etc.)
         while self.container_layout.count():
-            if item := self.container_layout.takeAt(0):
-                if widget := item.widget():
-                    widget.hide()
+            item = self.container_layout.takeAt(0)
+            if item:
+                widget = item.widget()
+                if widget:
                     widget.setParent(None)
                     widget.deleteLater()
-        self._ensure_container_stretch()
-
-    def _ensure_container_stretch(self) -> None:
-        """Ensure there is a stretch at the end of the container layout"""
-        if not (count := self.container_layout.count()) or not (
-            last_item := self.container_layout.itemAt(count - 1)
-        ) or not last_item.spacerItem():
-            self.container_layout.addStretch()
+        
+        # Add single stretch at end
+        self.container_layout.addStretch()
     
     def previous_page(self) -> None:
         """Go to previous page"""
@@ -347,13 +331,12 @@ class VolumeOverlay(QWidget):
         self.refresh_applications()
     
     def hideEvent(self, event):
-        """Handle hide event - stop timers and cleanup"""
+        """Handle hide event - stop timers"""
         super().hideEvent(event)
         if hasattr(self, '_filter_timer') and self._filter_timer:
             self._filter_timer.stop()
     
     def closeEvent(self, event):
-        """Handle close event - cleanup and hide instead of closing"""
-        self.cleanup_resources()
+        """Handle close event - hide instead of closing"""
         event.ignore()
         self.app.hide_overlay()

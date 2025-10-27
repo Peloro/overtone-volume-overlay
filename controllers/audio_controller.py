@@ -84,17 +84,19 @@ class AudioController:
     
     def _get_file_description(self, exe_path: str) -> Optional[str]:
         """Get the file description from executable metadata"""
-        if cached := self._file_desc_cache.get(exe_path):
+        cached = self._file_desc_cache.get(exe_path)
+        if cached:
             return cached
         try:
             language, codepage = win32api.GetFileVersionInfo(exe_path, '\\VarFileInfo\\Translation')[0]
             string_file_info = f'\\StringFileInfo\\{language:04X}{codepage:04X}\\'
             
             for key in ('FileDescription', 'ProductName'):
-                if desc := win32api.GetFileVersionInfo(exe_path, string_file_info + key):
+                desc = win32api.GetFileVersionInfo(exe_path, string_file_info + key)
+                if desc:
                     self._file_desc_cache[exe_path] = desc.strip()
                     return self._file_desc_cache[exe_path]
-        except:
+        except Exception:
             pass
         return None
     
@@ -121,15 +123,23 @@ class AudioController:
     def _get_display_name(self, process_name: str, pid: int, process) -> str:
         """Get display name for a process, trying multiple methods"""
         now = time()
-        if (cached := self._display_name_cache.get(pid)) and (now - self._name_timestamps.get(pid, 0)) < self._name_ttl_seconds:
+        cached = self._display_name_cache.get(pid)
+        if cached and (now - self._name_timestamps.get(pid, 0)) < self._name_ttl_seconds:
             return cached
 
-        # Try window title, then file description, finally process name
-        display_name = self._get_window_title_by_pid(pid) or (
-            self._get_file_description(exe_path) 
-            if (exe_path := getattr(process, 'exe', lambda: None)()) and os.path.exists(exe_path)
-            else None
-        ) or (process_name[:-4] if process_name.lower().endswith('.exe') else process_name)
+        # Try window title first
+        display_name = self._get_window_title_by_pid(pid)
+        
+        # If no window title, try file description
+        if not display_name:
+            exe_getter = getattr(process, 'exe', lambda: None)
+            exe_path = exe_getter()
+            if exe_path and os.path.exists(exe_path):
+                display_name = self._get_file_description(exe_path)
+        
+        # Fall back to process name
+        if not display_name:
+            display_name = process_name[:-4] if process_name.lower().endswith('.exe') else process_name
         
         self._display_name_cache[pid] = display_name
         self._name_timestamps[pid] = now
@@ -193,7 +203,8 @@ class AudioController:
     
     def _get_or_refresh_session(self, pid: int):
         """Get session from cache or refresh from audio sessions"""
-        if session := self._pid_to_session.get(pid):
+        session = self._pid_to_session.get(pid)
+        if session:
             try:
                 # Test if session is still valid
                 session.SimpleAudioVolume.GetMute()
@@ -226,10 +237,11 @@ class AudioController:
         """Get mute state for a specific application by PID(s) - True if ANY are muted"""
         pids = [pids] if isinstance(pids, int) else pids
         try:
-            return any(
-                session.SimpleAudioVolume.GetMute()
-                for pid in pids if (session := self._get_or_refresh_session(pid))
-            )
+            for pid in pids:
+                session = self._get_or_refresh_session(pid)
+                if session and session.SimpleAudioVolume.GetMute():
+                    return True
+            return False
         except Exception as e:
             logger.error(f"Error getting mute state: {e}")
             return False
@@ -251,8 +263,10 @@ class AudioController:
     def cleanup(self) -> None:
         """Clean up resources"""
         # Clear caches
-        for cache in (self._display_name_cache, self._file_desc_cache, self._pid_to_session, self._name_timestamps):
-            cache.clear()
+        self._display_name_cache.clear()
+        self._file_desc_cache.clear()
+        self._pid_to_session.clear()
+        self._name_timestamps.clear()
         
         # Just set to None - comtypes will handle cleanup automatically
         self.master_volume = None

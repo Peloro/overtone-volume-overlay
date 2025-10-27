@@ -33,6 +33,15 @@ class VolumeOverlay(QWidget):
         
         self.init_ui()
     
+    def __del__(self):
+        """Destructor to clean up resources"""
+        try:
+            if hasattr(self, '_filter_timer') and self._filter_timer:
+                self._filter_timer.stop()
+                self._filter_timer.deleteLater()
+        except:
+            pass
+    
     def init_ui(self):
         """Initialize the UI"""
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.Tool)
@@ -228,14 +237,19 @@ class VolumeOverlay(QWidget):
     
     def _clear_all_controls(self) -> None:
         """Clear all app controls from layout"""
-        for widget in list(self.app_controls.values()):
+        for name, widget in list(self.app_controls.items()):
             self.container_layout.removeWidget(widget)
+            widget.hide()
+            widget.setParent(None)
             widget.deleteLater()
         self.app_controls.clear()
         
+        # Clean up any remaining layout items
         while self.container_layout.count():
             if item := self.container_layout.takeAt(0):
                 if widget := item.widget():
+                    widget.hide()
+                    widget.setParent(None)
                     widget.deleteLater()
         self._ensure_container_stretch()
 
@@ -293,7 +307,13 @@ class VolumeOverlay(QWidget):
         super().showEvent(event)
         self.refresh_applications()
     
+    def hideEvent(self, event):
+        """Handle hide event - stop timers and cleanup"""
+        super().hideEvent(event)
+        if hasattr(self, '_filter_timer') and self._filter_timer:
+            self._filter_timer.stop()
+    
     def closeEvent(self, event):
         """Handle close event - just hide instead of closing"""
         event.ignore()
-        self.hide()
+        self.app.hide_overlay()

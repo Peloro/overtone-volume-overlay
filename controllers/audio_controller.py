@@ -236,5 +236,9 @@ class AudioController:
     
     def cleanup(self) -> None:
         """Clean up resources"""
+        # Clear caches
         for cache in (self._display_name_cache, self._file_desc_cache, self._pid_to_session, self._name_timestamps):
             cache.clear()
+        
+        # Just set to None - comtypes will handle cleanup automatically
+        self.master_volume = None

@@ -91,8 +91,13 @@ class VolumeOverlayApp:
     
     def hide_overlay(self) -> None:
         """Hide the overlay"""
-        self.overlay.hide()
         self.refresh_timer.stop()
+        
+        # Clear app controls before hiding to prevent dangling references
+        if hasattr(self.overlay, '_clear_all_controls'):
+            self.overlay._clear_all_controls()
+        
+        self.overlay.hide()
     
     def show_settings(self) -> None:
         """Show settings dialog"""

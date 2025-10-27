@@ -1,11 +1,13 @@
 """
 Settings Dialog for configuring the application
 """
+import os
 from typing import Optional
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QSpinBox, QDoubleSpinBox, QLineEdit,
                              QGroupBox, QFormLayout, QCheckBox, QTabWidget, QTextBrowser, QWidget)
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
 from config.constants import UIConstants, AppInfo
 
 
@@ -18,8 +20,13 @@ class SettingsDialog(QDialog):
     def init_ui(self):
         """Initialize the settings dialog UI"""
         self.setWindowTitle("Settings")
-        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(Qt.Window | Qt.WindowStaysOnTopHint)
         self.setMinimumWidth(450)
+        
+        # Set window icon (use black version for dark-themed dialog)
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets', 'icon2_black.ico')
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
         
         layout = QVBoxLayout()
         

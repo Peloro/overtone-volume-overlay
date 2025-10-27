@@ -3,8 +3,10 @@ Overtone Application
 A system tray application for controlling volume of individual applications
 """
 import sys
+import os
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
 
 def main() -> int:
     """Main entry point for the application"""
@@ -29,6 +31,12 @@ def main() -> int:
             error_dialog.setInformativeText(str(e))
             error_dialog.setDetailedText(traceback.format_exc())
             error_dialog.setWindowFlags(Qt.WindowStaysOnTopHint)
+            
+            # Set window icon (use .ico for better Windows compatibility)
+            icon_path = os.path.join(os.path.dirname(__file__), 'assets', 'icon2_black.ico')
+            if os.path.exists(icon_path):
+                error_dialog.setWindowIcon(QIcon(icon_path))
+            
             error_dialog.exec_()
         except Exception:
             pass  # If even the error dialog fails, just print to console

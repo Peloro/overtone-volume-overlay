@@ -42,7 +42,7 @@ class SystemTrayIcon(QSystemTrayIcon):
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         assets_dir = os.path.join(base_dir, 'assets')
         
-        icon_files = ['icon2.ico', 'icon2.png'] if sys.platform.startswith('win') else ['icon2.png', 'icon2.ico']
+        icon_files = ['icon2_black.ico', 'icon2.png'] if sys.platform.startswith('win') else ['icon2.png', 'icon2_black.ico']
 
         for icon_file in icon_files:
             icon_path = os.path.join(assets_dir, icon_file)

@@ -3,9 +3,11 @@ Main Overtone Application Class
 Coordinates all components and manages application lifecycle
 """
 import sys
+import os
 from typing import Optional
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtGui import QIcon
 import keyboard
 
 from config import SettingsManager, UIConstants
@@ -129,6 +131,11 @@ class VolumeOverlayApp:
         msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         msg_box.setDefaultButton(QMessageBox.No)
         msg_box.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.Dialog)
+        
+        # Set window icon (use .ico for better Windows compatibility)
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets', 'icon2_black.ico')
+        if os.path.exists(icon_path):
+            msg_box.setWindowIcon(QIcon(icon_path))
         msg_box.setStyleSheet("""
             QMessageBox { background-color: #2b2b2b; color: white; }
             QMessageBox QLabel { color: white; }

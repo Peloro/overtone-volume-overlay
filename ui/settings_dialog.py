@@ -3,9 +3,10 @@ Settings Dialog for configuring the application
 """
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QSpinBox, QDoubleSpinBox, QLineEdit,
-                             QGroupBox, QFormLayout, QCheckBox)
+                             QGroupBox, QFormLayout, QCheckBox, QTabWidget, QTextBrowser)
 from PyQt5.QtCore import Qt
-from config.constants import UIConstants
+from PyQt5.QtGui import QDesktopServices
+from config.constants import UIConstants, AppInfo
 
 
 class SettingsDialog(QDialog):
@@ -18,9 +19,44 @@ class SettingsDialog(QDialog):
         """Initialize the settings dialog UI"""
         self.setWindowTitle("Settings")
         self.setWindowFlags(Qt.WindowStaysOnTopHint)
-        self.setMinimumWidth(400)
+        self.setMinimumWidth(450)
         
         layout = QVBoxLayout()
+        
+        # Create tab widget
+        tab_widget = QTabWidget()
+        
+        # Settings tab
+        settings_tab = self.create_settings_tab()
+        tab_widget.addTab(settings_tab, "Settings")
+        
+        # About tab
+        about_tab = self.create_about_tab()
+        tab_widget.addTab(about_tab, "About")
+        
+        layout.addWidget(tab_widget)
+        
+        # Buttons at the bottom
+        button_layout = QHBoxLayout()
+        
+        save_btn = QPushButton("Save")
+        save_btn.clicked.connect(self.save_settings)
+        
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.clicked.connect(self.close)
+        
+        button_layout.addStretch()
+        button_layout.addWidget(save_btn)
+        button_layout.addWidget(cancel_btn)
+        
+        layout.addLayout(button_layout)
+        
+        self.setLayout(layout)
+        self.apply_styles()
+    
+    def create_settings_tab(self):
+        """Create the settings tab content"""
+        settings_widget = QVBoxLayout()
         
         size_group = QGroupBox("Overlay Size")
         size_layout = QFormLayout()
@@ -82,26 +118,78 @@ class SettingsDialog(QDialog):
         
         hotkey_group.setLayout(hotkey_layout)
         
-        button_layout = QHBoxLayout()
+        settings_widget.addWidget(size_group)
+        settings_widget.addWidget(appearance_group)
+        settings_widget.addWidget(behavior_group)
+        settings_widget.addWidget(hotkey_group)
+        settings_widget.addStretch()
         
-        save_btn = QPushButton("Save")
-        save_btn.clicked.connect(self.save_settings)
+        from PyQt5.QtWidgets import QWidget
+        container = QWidget()
+        container.setLayout(settings_widget)
+        return container
+    
+    def create_about_tab(self):
+        """Create the about tab content"""
+        about_widget = QVBoxLayout()
         
-        cancel_btn = QPushButton("Cancel")
-        cancel_btn.clicked.connect(self.close)
+        # App name and version
+        title_label = QLabel(f"<h2>{AppInfo.APP_NAME}</h2>")
+        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setStyleSheet("color: white; margin: 10px;")
         
-        button_layout.addStretch()
-        button_layout.addWidget(save_btn)
-        button_layout.addWidget(cancel_btn)
+        version_label = QLabel(f"<p style='font-size: 12px; color: #aaa;'>Version {AppInfo.VERSION}</p>")
+        version_label.setAlignment(Qt.AlignCenter)
         
-        layout.addWidget(size_group)
-        layout.addWidget(appearance_group)
-        layout.addWidget(behavior_group)
-        layout.addWidget(hotkey_group)
-        layout.addLayout(button_layout)
+        # Description
+        description = QTextBrowser()
+        description.setOpenExternalLinks(True)
+        description.setMaximumHeight(350)
+        description.setHtml(f"""
+            <div style='color: white; font-family: Arial; font-size: 12px;'>
+                <p><b>Description:</b></p>
+                <p>{AppInfo.DESCRIPTION}</p>
+                
+                <p><b>Features:</b></p>
+                <ul>
+                    <li>Per-Application Volume Control</li>
+                    <li>System Volume Control</li>
+                    <li>Always-on-Top Overlay</li>
+                    <li>Global Hotkeys</li>
+                    <li>Smart Pagination</li>
+                    <li>System Tray Integration</li>
+                    <li>Modern Dark UI</li>
+                </ul>
+                
+                <p><b>Author:</b> {AppInfo.AUTHOR}</p>
+                <p><b>GitHub:</b> <a href="{AppInfo.GITHUB_URL}" style="color: #42a5f5;">{AppInfo.GITHUB_URL}</a></p>
+                <p><b>Repository:</b> <a href="{AppInfo.REPO_URL}" style="color: #42a5f5;">{AppInfo.REPO_URL}</a></p>
+                
+                <p style='margin-top: 15px; color: #aaa; font-size: 11px;'><b>License:</b> {AppInfo.LICENSE}</p>
+                <p style='color: #aaa; font-size: 11px;'>© {AppInfo.YEAR} {AppInfo.AUTHOR}</p>
+            </div>
+        """)
+        description.setStyleSheet("""
+            QTextBrowser {
+                background-color: #2b2b2b;
+                border: 1px solid #555;
+                border-radius: 5px;
+                padding: 10px;
+            }
+        """)
         
-        self.setLayout(layout)
+        about_widget.addWidget(title_label)
+        about_widget.addWidget(version_label)
+        about_widget.addWidget(description)
+        about_widget.addStretch()
         
+        from PyQt5.QtWidgets import QWidget
+        container = QWidget()
+        container.setLayout(about_widget)
+        return container
+    
+    def apply_styles(self):
+        """Apply stylesheets to the dialog"""
         self.setStyleSheet("""
             QDialog {
                 background-color: #2b2b2b;
@@ -141,6 +229,27 @@ class SettingsDialog(QDialog):
             }
             QPushButton:hover {
                 background-color: #42a5f5;
+            }
+            QTabWidget::pane {
+                border: 1px solid #555;
+                border-radius: 5px;
+                background-color: #2b2b2b;
+            }
+            QTabBar::tab {
+                background-color: #424242;
+                color: white;
+                border: 1px solid #555;
+                padding: 8px 20px;
+                margin-right: 2px;
+                border-top-left-radius: 5px;
+                border-top-right-radius: 5px;
+            }
+            QTabBar::tab:selected {
+                background-color: #1e88e5;
+                color: white;
+            }
+            QTabBar::tab:hover {
+                background-color: #555;
             }
         """)
     

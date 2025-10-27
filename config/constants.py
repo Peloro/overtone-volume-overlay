@@ -2,6 +2,18 @@
 UI Constants and Colors for Overtone Application
 """
 
+class AppInfo:
+    """Application information constants"""
+    APP_NAME = "Overtone"
+    VERSION = "1.0.0"
+    DESCRIPTION = "A modern, lightweight volume mixer overlay for Windows with per-application volume control."
+    AUTHOR = "Peloro"
+    GITHUB_URL = "https://github.com/Peloro"
+    REPO_URL = "https://github.com/Peloro/overtone-volume-overlay"
+    LICENSE = "MIT License"
+    YEAR = "2025"
+
+
 class UIConstants:
     """UI dimension and timing constants"""
     DEFAULT_OVERLAY_WIDTH = 300

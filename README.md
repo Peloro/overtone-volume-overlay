@@ -27,8 +27,8 @@ A modern, lightweight volume mixer overlay for Windows with per-application volu
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/Peloro/Personal_Projects.git
-cd Personal_Projects/Overtone
+git clone https://github.com/Peloro/overtone-volume-overlay.git
+cd overtone-volume-overlay
 ```
 
 2. Install dependencies:
@@ -144,4 +144,4 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ## Support
 
-If you encounter any issues or have questions, please [open an issue](https://github.com/Peloro/Personal_Projects/issues) on GitHub.
+If you encounter any issues or have questions, please [open an issue](https://github.com/Peloro/overtone-volume-overlay/issues) on GitHub.

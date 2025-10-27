@@ -14,9 +14,10 @@ class UIConstants:
     APP_CONTROL_HEIGHT = 68  # Approximate height of each app control
     TITLE_BAR_HEIGHT = 50
     MASTER_VOLUME_HEIGHT = 80
+    FILTER_BAR_HEIGHT = 35
     PAGINATION_HEIGHT = 30
     WINDOW_MARGINS = 40
-    RESERVED_HEIGHT = 200
+    RESERVED_HEIGHT = 235  # Increased to account for filter bar
     
     BUTTON_SIZE = 30
     BUTTON_HEIGHT = 24
@@ -295,3 +296,40 @@ class StyleSheets:
                 padding: 0px 10px;
             }}
         """
+    
+    @staticmethod
+    def get_filter_input_stylesheet() -> str:
+        return f"""
+            QLineEdit {{
+                background-color: {Colors.INPUT_BG};
+                border: 1px solid {Colors.BORDER_COLOR};
+                border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
+                padding: 5px 8px;
+                color: {Colors.TEXT_WHITE};
+                font-size: {UIConstants.LABEL_FONT_SIZE}px;
+            }}
+            QLineEdit:focus {{
+                border: 1px solid {Colors.PRIMARY_BUTTON_BG};
+            }}
+            QLineEdit::placeholder {{
+                color: {Colors.TEXT_GRAY};
+            }}
+        """
+    
+    @staticmethod
+    def get_clear_filter_button_stylesheet() -> str:
+        return f"""
+            QPushButton {{
+                background-color: {Colors.SECONDARY_BUTTON_BG};
+                border: 1px solid {Colors.BORDER_COLOR};
+                border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
+                font-size: 16px;
+                font-weight: bold;
+                color: {Colors.TEXT_LIGHT_GRAY};
+            }}
+            QPushButton:hover {{
+                background-color: {Colors.CLOSE_BUTTON_BG};
+                color: {Colors.TEXT_WHITE};
+            }}
+        """
+

@@ -3,7 +3,7 @@ Main Overtone Overlay Window
 """
 import os
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-                             QPushButton, QFrame)
+                             QPushButton, QFrame, QLineEdit)
 from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QPixmap, QIcon
 
@@ -20,10 +20,12 @@ class VolumeOverlay(QWidget):
         self.app = app
         self.app_controls = {}
         self.all_sessions = []
+        self.filtered_sessions = []
         self.current_page = 0
         self.drag_position = QPoint()
         self.title_bar = None
         self._last_apps_per_page = None
+        self.filter_text = ""
         
         self.init_ui()
     
@@ -62,6 +64,10 @@ class VolumeOverlay(QWidget):
         
         self.master_control = MasterVolumeControl(self.app.audio_controller)
         main_layout.addWidget(self.master_control)
+        
+        # Add filter/search bar
+        self.filter_bar = self._create_filter_bar()
+        main_layout.addWidget(self.filter_bar)
         
         self.container = QFrame()
         self.container.setMinimumHeight(0)
@@ -133,6 +139,38 @@ class VolumeOverlay(QWidget):
         ))
         
         return title_bar
+    
+    def _create_filter_bar(self) -> QFrame:
+        """Create the search/filter bar"""
+        filter_frame = QFrame()
+        filter_layout = QHBoxLayout(filter_frame)
+        filter_layout.setContentsMargins(
+            UIConstants.FRAME_MARGIN,
+            UIConstants.FRAME_MARGIN,
+            UIConstants.FRAME_MARGIN,
+            UIConstants.FRAME_MARGIN
+        )
+        
+        # Search input field
+        self.filter_input = QLineEdit()
+        self.filter_input.setPlaceholderText("Filter applications...")
+        self.filter_input.setStyleSheet(StyleSheets.get_filter_input_stylesheet())
+        self.filter_input.textChanged.connect(self.on_filter_changed)
+        
+        # Clear button
+        self.clear_filter_btn = QPushButton("×")
+        self.clear_filter_btn.setFixedSize(UIConstants.BUTTON_HEIGHT, UIConstants.BUTTON_HEIGHT)
+        self.clear_filter_btn.setStyleSheet(StyleSheets.get_clear_filter_button_stylesheet())
+        self.clear_filter_btn.clicked.connect(self.clear_filter)
+        self.clear_filter_btn.setVisible(False)  # Hidden initially
+        self.clear_filter_btn.setToolTip("Clear filter")
+        
+        filter_layout.addWidget(self.filter_input)
+        filter_layout.addWidget(self.clear_filter_btn)
+        
+        filter_frame.setStyleSheet(StyleSheets.get_frame_stylesheet())
+        
+        return filter_frame
 
     def _assets_dir(self) -> str:
         """Return absolute path to the assets directory."""
@@ -195,10 +233,32 @@ class VolumeOverlay(QWidget):
         # Use setWindowOpacity for direct window transparency control
         self.setWindowOpacity(opacity)
     
+    def on_filter_changed(self, text):
+        """Handle filter text change"""
+        self.filter_text = text.lower().strip()
+        self.clear_filter_btn.setVisible(bool(self.filter_text))
+        self.current_page = 0  # Reset to first page when filter changes
+        self.apply_filter()
+    
+    def clear_filter(self):
+        """Clear the filter text"""
+        self.filter_input.clear()
+    
+    def apply_filter(self):
+        """Apply the current filter to sessions"""
+        if not self.filter_text:
+            self.filtered_sessions = self.all_sessions
+        else:
+            self.filtered_sessions = [
+                session for session in self.all_sessions
+                if self.filter_text in session['name'].lower()
+            ]
+        self.update_page_display()
+    
     def refresh_applications(self):
         """Refresh the list of applications with volume controls"""
         self.all_sessions = self.app.audio_controller.get_audio_sessions()
-        self.update_page_display()
+        self.apply_filter()
     
     def get_apps_per_page(self) -> int:
         """Calculate how many apps can fit in current window height"""
@@ -209,22 +269,26 @@ class VolumeOverlay(QWidget):
     
     def update_page_display(self):
         """Update the displayed applications based on current page"""
-        if not self.all_sessions:
+        if not self.filtered_sessions:
             self._clear_all_controls()
-            self.page_label.setText("0 / 0")
+            # Show different message if filtering vs no apps
+            if self.filter_text and self.all_sessions:
+                self.page_label.setText("No matches")
+            else:
+                self.page_label.setText("0 / 0")
             self.prev_btn.setEnabled(False)
             self.next_btn.setEnabled(False)
             return
         
         apps_per_page = self.get_apps_per_page()
-        total_apps = len(self.all_sessions)
+        total_apps = len(self.filtered_sessions)
         total_pages = max(1, (total_apps + apps_per_page - 1) // apps_per_page)
         
         self.current_page = max(0, min(self.current_page, total_pages - 1))
         
         start_idx = self.current_page * apps_per_page
         end_idx = min(start_idx + apps_per_page, total_apps)
-        page_sessions = self.all_sessions[start_idx:end_idx]
+        page_sessions = self.filtered_sessions[start_idx:end_idx]
         
         current_app_names = {session['name'] for session in page_sessions}
         displayed_app_names = set(self.app_controls.keys())
@@ -265,7 +329,7 @@ class VolumeOverlay(QWidget):
     def next_page(self):
         """Go to next page"""
         apps_per_page = self.get_apps_per_page()
-        total_pages = max(1, (len(self.all_sessions) + apps_per_page - 1) // apps_per_page)
+        total_pages = max(1, (len(self.filtered_sessions) + apps_per_page - 1) // apps_per_page)
         if self.current_page < total_pages - 1:
             self.current_page += 1
             self.update_page_display()

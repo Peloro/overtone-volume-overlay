@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                              QGroupBox, QFormLayout, QCheckBox, QTabWidget, QTextBrowser, QWidget)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
-from config.constants import UIConstants, AppInfo
+from config import UIConstants, AppInfo
 
 
 class SettingsDialog(QDialog):
@@ -46,11 +46,11 @@ class SettingsDialog(QDialog):
         # Close button at the bottom (no Save/Cancel needed since all changes apply immediately)
         button_layout = QHBoxLayout()
         
-        close_btn = QPushButton("Close")
-        close_btn.clicked.connect(self.close)
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(self.close)
         
         button_layout.addStretch()
-        button_layout.addWidget(close_btn)
+        button_layout.addWidget(close_button)
         
         layout.addLayout(button_layout)
         
@@ -263,24 +263,24 @@ class SettingsDialog(QDialog):
         """Handle width change in real-time"""
         self.app.settings_manager.set("overlay_width", value)
         self.app.overlay.resize(value, self.app.settings_manager.overlay_height)
-        self.app.settings_manager.save_settings()
+        self.app.settings_manager.save_settings()  # Debounced automatically
     
     def on_height_changed(self, value: int) -> None:
         """Handle height change in real-time"""
         self.app.settings_manager.set("overlay_height", value)
         self.app.overlay.resize(self.app.settings_manager.overlay_width, value)
-        self.app.settings_manager.save_settings()
+        self.app.settings_manager.save_settings()  # Debounced automatically
     
     def on_opacity_changed(self, value: float) -> None:
         """Handle opacity change in real-time"""
         self.app.settings_manager.set("overlay_opacity", value)
         self.app.overlay.update_background_opacity()
-        self.app.settings_manager.save_settings()
+        self.app.settings_manager.save_settings()  # Debounced automatically
     
     def on_confirm_quit_changed(self, state: int) -> None:
         """Handle confirm quit checkbox change"""
         self.app.settings_manager.set("confirm_on_quit", bool(state))
-        self.app.settings_manager.save_settings()
+        self.app.settings_manager.save_settings(debounce=False)  # Immediate for checkbox
     
     def on_hotkey_changed(self) -> None:
         """Handle hotkey change - save and reapply immediately"""

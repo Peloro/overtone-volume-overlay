@@ -6,6 +6,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+overtone.log
 
 # Virtual environment
 venv/

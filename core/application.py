@@ -14,6 +14,9 @@ from config import SettingsManager, UIConstants
 from controllers import AudioController
 from ui import VolumeOverlay, SettingsDialog, SystemTrayIcon
 from .hotkey_handler import HotkeyHandler
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class VolumeOverlayApp:
@@ -42,21 +45,56 @@ class VolumeOverlayApp:
         
         self.refresh_timer = QTimer()
         self.refresh_timer.timeout.connect(self.refresh_applications)
+        
+        logger.info("VolumeOverlayApp initialized successfully")
     
     def _validate_hotkey_format(self, hotkey: str) -> bool:
         """Validate hotkey format before registration"""
         if not hotkey or not isinstance(hotkey, str):
             return False
+        
         parts = hotkey.lower().split('+')
-        return len(parts) >= 2 and any(mod in parts for mod in ('ctrl', 'shift', 'alt', 'win'))
+        
+        # Must have at least modifier + key
+        if len(parts) < 2:
+            return False
+        
+        # Check for valid modifiers
+        valid_modifiers = {'ctrl', 'shift', 'alt', 'win'}
+        has_modifier = any(mod in parts for mod in valid_modifiers)
+        
+        if not has_modifier:
+            return False
+        
+        # Last part should be the key (not a modifier)
+        key_part = parts[-1]
+        if key_part in valid_modifiers:
+            logger.warning(f"Hotkey '{hotkey}' has no key specified")
+            return False
+        
+        # Check for valid key length (single char or known key names)
+        valid_keys = {
+            'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12',
+            'esc', 'tab', 'space', 'enter', 'backspace', 'delete', 'insert',
+            'home', 'end', 'pageup', 'pagedown', 'up', 'down', 'left', 'right'
+        }
+        
+        if len(key_part) > 1 and key_part not in valid_keys:
+            logger.warning(f"Hotkey '{hotkey}' has invalid key: {key_part}")
+            return False
+        
+        return True
     
     def _unregister_hotkeys(self) -> None:
         """Unregister only our hotkeys"""
         for hotkey_ref in self._registered_hotkeys:
             try:
                 keyboard.remove_hotkey(hotkey_ref)
-            except (KeyError, ValueError):
-                pass
+                logger.debug(f"Unregistered hotkey")
+            except (KeyError, ValueError) as e:
+                logger.debug(f"Hotkey already unregistered or invalid: {e}")
+            except Exception as e:
+                logger.error(f"Unexpected error unregistering hotkey: {e}")
         self._registered_hotkeys.clear()
     
     def setup_hotkeys(self) -> None:
@@ -71,10 +109,11 @@ class VolumeOverlayApp:
             if self._validate_hotkey_format(hotkey):
                 try:
                     self._registered_hotkeys.append(keyboard.add_hotkey(hotkey, callback, suppress=False))
+                    logger.debug(f"Registered hotkey: {hotkey}")
                 except Exception as e:
-                    print(f"Error registering hotkey '{hotkey}': {e}")
+                    logger.error(f"Error registering hotkey '{hotkey}': {e}")
             else:
-                print(f"Warning: Invalid hotkey format: {hotkey}")
+                logger.warning(f"Invalid hotkey format: {hotkey}")
     
     def toggle_overlay(self) -> None:
         """Toggle overlay visibility"""
@@ -153,6 +192,7 @@ class VolumeOverlayApp:
     
     def quit_application(self) -> None:
         """Quit the application"""
+        logger.info("Shutting down Overtone application")
         self.refresh_timer.stop()
         self._unregister_hotkeys()
         if hasattr(self, 'audio_controller'):

@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QSlider,
                              QLabel, QPushButton, QLineEdit, QFrame)
 from PyQt5.QtCore import Qt
 
-from config.constants import UIConstants, Colors, StyleSheets
+from config import UIConstants, Colors, StyleSheets
 from .base_volume_control import BaseVolumeControl
 
 
@@ -59,15 +59,15 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         self.volume_text.returnPressed.connect(self.on_volume_text_changed)
         self.volume_text.editingFinished.connect(self.on_volume_text_changed)
         
-        self.mute_btn = QPushButton("🔇" if self._initial_master_mute else "🔊")
-        self.mute_btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
-        self.mute_btn.setMinimumSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
-        self.mute_btn.setStyleSheet(StyleSheets.get_mute_button_stylesheet(is_master=True))
-        self.mute_btn.clicked.connect(self.on_mute_clicked)
+        self.mute_button = QPushButton("🔇" if self._initial_master_mute else "🔊")
+        self.mute_button.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
+        self.mute_button.setMinimumSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
+        self.mute_button.setStyleSheet(StyleSheets.get_mute_button_stylesheet(is_master=True))
+        self.mute_button.clicked.connect(self.on_mute_clicked)
         
         master_control_layout.addWidget(self.slider, 1)  # Give slider stretch factor
         master_control_layout.addWidget(self.volume_text, 0)
-        master_control_layout.addWidget(self.mute_btn, 0)
+        master_control_layout.addWidget(self.mute_button, 0)
         layout.addLayout(master_control_layout)
         
         self.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.MASTER_FRAME_BG))

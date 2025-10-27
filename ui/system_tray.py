@@ -6,6 +6,9 @@ import sys
 from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QAction
 from PyQt5.QtGui import QIcon, QPixmap, QPainter, QColor, QPolygon
 from PyQt5.QtCore import Qt, QPoint
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class SystemTrayIcon(QSystemTrayIcon):
@@ -52,7 +55,7 @@ class SystemTrayIcon(QSystemTrayIcon):
             # Try ICO on Windows
             if icon_file.endswith('.ico') and sys.platform.startswith('win'):
                 if not (icon := QIcon(icon_path)).isNull():
-                    print(f"Loaded tray icon from ICO: {icon_path}")
+                    logger.info(f"Loaded tray icon from ICO: {icon_path}")
                     return icon
 
             # Try PNG with alpha channel
@@ -73,9 +76,10 @@ class SystemTrayIcon(QSystemTrayIcon):
                 painter.end()
                 icon.addPixmap(canvas)
 
-            print(f"Loaded tray icon with alpha from: {icon_path}")
+            logger.info(f"Loaded tray icon with alpha from: {icon_path}")
             return icon
         
+        logger.warning("No icon files found, using fallback icon")
         return self._create_fallback_icon()
     
     def _create_fallback_icon(self) -> QIcon:

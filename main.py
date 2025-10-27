@@ -8,6 +8,11 @@ from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 
+from utils.logger import setup_logger
+
+# Setup logging
+logger = setup_logger("overtone", "overtone.log")
+
 def main() -> int:
     """Main entry point for the application"""
     app = QApplication(sys.argv)
@@ -16,9 +21,10 @@ def main() -> int:
     try:
         from core import VolumeOverlayApp
         overlay_app = VolumeOverlayApp()
+        logger.info("Overtone application started successfully")
         return app.exec_()
     except Exception as e:
-        print(f"Fatal error during initialization: {e}")
+        logger.critical(f"Fatal error during initialization: {e}", exc_info=True)
         import traceback
         traceback.print_exc()
         

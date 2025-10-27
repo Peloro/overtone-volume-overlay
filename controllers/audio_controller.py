@@ -15,7 +15,10 @@ import win32process
 import win32api
 import os
 
-from config.constants import UIConstants
+from config import UIConstants
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class AudioController:
@@ -36,8 +39,9 @@ class AudioController:
             devices = AudioUtilities.GetSpeakers()
             interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
             self.master_volume = cast(interface, POINTER(IAudioEndpointVolume))
+            logger.info("Master volume interface initialized successfully")
         except Exception as e:
-            print(f"Error getting master volume interface: {e}")
+            logger.error(f"Error getting master volume interface: {e}", exc_info=True)
             self.master_volume = None
     
     def get_master_volume(self) -> float:
@@ -46,7 +50,7 @@ class AudioController:
             if self.master_volume:
                 return self.master_volume.GetMasterVolumeLevelScalar()
         except Exception as e:
-            print(f"Error getting master volume: {e}")
+            logger.error(f"Error getting master volume: {e}")
         return 0.5
     
     def set_master_volume(self, volume: float) -> bool:
@@ -56,7 +60,7 @@ class AudioController:
                 self.master_volume.SetMasterVolumeLevelScalar(volume, None)
                 return True
         except Exception as e:
-            print(f"Error setting master volume: {e}")
+            logger.error(f"Error setting master volume: {e}")
         return False
     
     def get_master_mute(self) -> bool:
@@ -65,7 +69,7 @@ class AudioController:
             if self.master_volume:
                 return self.master_volume.GetMute()
         except Exception as e:
-            print(f"Error getting master mute: {e}")
+            logger.error(f"Error getting master mute: {e}")
         return False
     
     def set_master_mute(self, mute: bool) -> bool:
@@ -75,7 +79,7 @@ class AudioController:
                 self.master_volume.SetMute(mute, None)
                 return True
         except Exception as e:
-            print(f"Error setting master mute: {e}")
+            logger.error(f"Error setting master mute: {e}")
         return False
     
     def _get_file_description(self, exe_path: str) -> Optional[str]:
@@ -111,7 +115,7 @@ class AudioController:
             win32gui.EnumWindows(enum_window_callback, titles)
             return titles[0] if titles else None
         except Exception as e:
-            print(f"Error getting window title for PID {pid}: {e}")
+            logger.debug(f"Error getting window title for PID {pid}: {e}")
         return None
     
     def _get_display_name(self, process_name: str, pid: int, process) -> str:
@@ -183,7 +187,7 @@ class AudioController:
             sessions = list(grouped_sessions.values())
             
         except Exception as e:
-            print(f"Error getting audio sessions: {e}")
+            logger.error(f"Error getting audio sessions: {e}", exc_info=True)
         
         return sessions
     
@@ -215,7 +219,7 @@ class AudioController:
                     success = True
             return success
         except Exception as e:
-            print(f"Error setting volume: {e}")
+            logger.error(f"Error setting volume: {e}")
             return False
     
     def get_application_mute(self, pids) -> bool:
@@ -227,7 +231,7 @@ class AudioController:
                 for pid in pids if (session := self._get_or_refresh_session(pid))
             )
         except Exception as e:
-            print(f"Error getting mute state: {e}")
+            logger.error(f"Error getting mute state: {e}")
             return False
     
     def set_application_mute(self, pids, mute: bool) -> bool:
@@ -241,7 +245,7 @@ class AudioController:
                     success = True
             return success
         except Exception as e:
-            print(f"Error setting mute: {e}")
+            logger.error(f"Error setting mute: {e}")
             return False
     
     def cleanup(self) -> None:

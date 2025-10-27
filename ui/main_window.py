@@ -6,7 +6,8 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QFrame, QLineEdit)
 from PyQt5.QtCore import Qt, QPoint, QTimer
 
-from config.constants import UIConstants, Colors, StyleSheets
+from config import UIConstants, Colors, StyleSheets
+from utils import create_standard_button
 from .app_control import AppVolumeControl
 from .master_control import MasterVolumeControl
 
@@ -37,11 +38,16 @@ class VolumeOverlay(QWidget):
     def __del__(self):
         """Destructor to clean up resources"""
         try:
-            if hasattr(self, '_filter_timer') and self._filter_timer:
-                self._filter_timer.stop()
-                self._filter_timer.deleteLater()
+            self.cleanup_resources()
         except Exception:
-            pass
+            pass  # Ignore errors during cleanup
+    
+    def cleanup_resources(self) -> None:
+        """Clean up timers and resources"""
+        if hasattr(self, '_filter_timer') and self._filter_timer:
+            self._filter_timer.stop()
+            self._filter_timer.deleteLater()
+            self._filter_timer = None
     
     def init_ui(self):
         """Initialize the UI"""
@@ -85,15 +91,6 @@ class VolumeOverlay(QWidget):
         self.setStyleSheet(StyleSheets.get_overlay_stylesheet())
         self.update_background_opacity()
     
-    def _create_button(self, text: str, callback, tooltip: str, stylesheet: str) -> QPushButton:
-        """Create a standard button with common properties"""
-        btn = QPushButton(text)
-        btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_SIZE)
-        btn.setStyleSheet(stylesheet)
-        btn.clicked.connect(callback)
-        btn.setToolTip(tooltip)
-        return btn
-    
     def _create_title_bar(self) -> QFrame:
         """Create the title bar with dragging and control buttons"""
         title_bar = QFrame()
@@ -107,7 +104,7 @@ class VolumeOverlay(QWidget):
         title_layout.addStretch()
         
         # Create filter toggle button
-        self.filter_toggle_btn = self._create_button("⌕", self.toggle_filter, "Show/Hide filter", StyleSheets.get_settings_button_stylesheet())
+        self.filter_toggle_btn = create_standard_button("⌕", self.toggle_filter, "Show/Hide filter", StyleSheets.get_settings_button_stylesheet())
         title_layout.addWidget(self.filter_toggle_btn)
         
         for text, callback, tooltip, stylesheet in [
@@ -115,7 +112,7 @@ class VolumeOverlay(QWidget):
             ("—", self.hide, "Minimize to tray", StyleSheets.get_minimize_button_stylesheet()),
             ("×", self.app.confirm_quit, "Quit application", StyleSheets.get_close_button_stylesheet())
         ]:
-            title_layout.addWidget(self._create_button(text, callback, tooltip, stylesheet))
+            title_layout.addWidget(create_standard_button(text, callback, tooltip, stylesheet))
         
         title_bar.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.TITLE_BAR_BG))
         return title_bar
@@ -144,15 +141,15 @@ class VolumeOverlay(QWidget):
         self.filter_input.setStyleSheet(StyleSheets.get_filter_input_stylesheet())
         self.filter_input.textChanged.connect(self.on_filter_changed)
         
-        self.clear_filter_btn = QPushButton("×")
-        self.clear_filter_btn.setFixedSize(UIConstants.BUTTON_HEIGHT, UIConstants.BUTTON_HEIGHT)
-        self.clear_filter_btn.setStyleSheet(StyleSheets.get_clear_filter_button_stylesheet())
-        self.clear_filter_btn.clicked.connect(self.clear_filter)
-        self.clear_filter_btn.setVisible(False)
-        self.clear_filter_btn.setToolTip("Clear filter")
+        self.clear_filter_button = QPushButton("×")
+        self.clear_filter_button.setFixedSize(UIConstants.BUTTON_HEIGHT, UIConstants.BUTTON_HEIGHT)
+        self.clear_filter_button.setStyleSheet(StyleSheets.get_clear_filter_button_stylesheet())
+        self.clear_filter_button.clicked.connect(self.clear_filter)
+        self.clear_filter_button.setVisible(False)
+        self.clear_filter_button.setToolTip("Clear filter")
         
         filter_layout.addWidget(self.filter_input)
-        filter_layout.addWidget(self.clear_filter_btn)
+        filter_layout.addWidget(self.clear_filter_button)
         filter_frame.setStyleSheet(StyleSheets.get_frame_stylesheet())
         return filter_frame
     
@@ -161,18 +158,18 @@ class VolumeOverlay(QWidget):
         pagination_frame = QFrame()
         pagination_layout = QHBoxLayout(pagination_frame)
         
-        self.prev_btn = self._create_button("◀", self.previous_page, "", StyleSheets.get_pagination_button_stylesheet())
-        self.prev_btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
+        from utils import create_button
+        
+        self.previous_button = create_button("◀", self.previous_page, "", StyleSheets.get_pagination_button_stylesheet(), UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
         
         self.page_label = QLabel("1 / 1")
         self.page_label.setStyleSheet(StyleSheets.get_page_label_stylesheet())
         self.page_label.setAlignment(Qt.AlignCenter)
         
-        self.next_btn = self._create_button("▶", self.next_page, "", StyleSheets.get_pagination_button_stylesheet())
-        self.next_btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
+        self.next_button = create_button("▶", self.next_page, "", StyleSheets.get_pagination_button_stylesheet(), UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
         
         pagination_layout.addStretch()
-        for widget in (self.prev_btn, self.page_label, self.next_btn):
+        for widget in (self.previous_button, self.page_label, self.next_button):
             pagination_layout.addWidget(widget)
         pagination_layout.addStretch()
         
@@ -189,7 +186,7 @@ class VolumeOverlay(QWidget):
     def on_filter_changed(self, text: str) -> None:
         """Handle filter text change"""
         self.filter_text = text.lower().strip()
-        self.clear_filter_btn.setVisible(bool(self.filter_text))
+        self.clear_filter_button.setVisible(bool(self.filter_text))
         self.current_page = 0
         self._filter_timer.start(UIConstants.FILTER_DEBOUNCE_MS)
     
@@ -214,21 +211,27 @@ class VolumeOverlay(QWidget):
         """Calculate how many apps can fit in current window height"""
         return max(1, (self.height() - UIConstants.RESERVED_HEIGHT) // UIConstants.APP_CONTROL_HEIGHT)
     
-    def update_page_display(self) -> None:
-        """Update the displayed applications based on current page"""
-        if not self.filtered_sessions:
-            self.clear_all_controls()
-            self.page_label.setText("No matches" if self.filter_text and self.all_sessions else "0 / 0")
-            self.prev_btn.setEnabled(False)
-            self.next_btn.setEnabled(False)
-            return
+    def _handle_no_sessions(self) -> None:
+        """Handle display when there are no filtered sessions"""
+        self.clear_all_controls()
+        self.page_label.setText("No matches" if self.filter_text and self.all_sessions else "0 / 0")
+        self.previous_button.setEnabled(False)
+        self.next_button.setEnabled(False)
+    
+    def _calculate_pagination(self, apps_per_page: int) -> tuple[int, int, int]:
+        """
+        Calculate pagination parameters
         
-        apps_per_page = self.get_apps_per_page()
+        Returns:
+            Tuple of (total_pages, current_page, start_idx)
+        """
         total_pages = max(1, (len(self.filtered_sessions) + apps_per_page - 1) // apps_per_page)
-        self.current_page = max(0, min(self.current_page, total_pages - 1))
-        
-        start_idx = self.current_page * apps_per_page
-        page_sessions = self.filtered_sessions[start_idx:start_idx + apps_per_page]
+        current_page = max(0, min(self.current_page, total_pages - 1))
+        start_idx = current_page * apps_per_page
+        return total_pages, current_page, start_idx
+    
+    def _update_controls_for_sessions(self, page_sessions: List[Dict[str, Any]]) -> None:
+        """Update or create controls for the given sessions"""
         current_names = {session['name'] for session in page_sessions}
 
         # Remove controls no longer on this page
@@ -248,11 +251,28 @@ class VolumeOverlay(QWidget):
                 control = AppVolumeControl(session, self.app.audio_controller)
                 self.container_layout.addWidget(control)
                 self.app_controls[name] = control
+    
+    def _update_pagination_ui(self, current_page: int, total_pages: int) -> None:
+        """Update pagination button states and label"""
+        self.page_label.setText(f"{current_page + 1} / {total_pages}")
+        self.previous_button.setEnabled(current_page > 0)
+        self.next_button.setEnabled(current_page < total_pages - 1)
+    
+    def update_page_display(self) -> None:
+        """Update the displayed applications based on current page"""
+        if not self.filtered_sessions:
+            self._handle_no_sessions()
+            return
+        
+        apps_per_page = self.get_apps_per_page()
+        total_pages, current_page, start_idx = self._calculate_pagination(apps_per_page)
+        self.current_page = current_page
+        
+        page_sessions = self.filtered_sessions[start_idx:start_idx + apps_per_page]
+        self._update_controls_for_sessions(page_sessions)
         
         self._ensure_container_stretch()
-        self.page_label.setText(f"{self.current_page + 1} / {total_pages}")
-        self.prev_btn.setEnabled(self.current_page > 0)
-        self.next_btn.setEnabled(self.current_page < total_pages - 1)
+        self._update_pagination_ui(current_page, total_pages)
     
     def clear_all_controls(self) -> None:
         """Clear all app controls from layout"""
@@ -333,6 +353,7 @@ class VolumeOverlay(QWidget):
             self._filter_timer.stop()
     
     def closeEvent(self, event):
-        """Handle close event - just hide instead of closing"""
+        """Handle close event - cleanup and hide instead of closing"""
+        self.cleanup_resources()
         event.ignore()
         self.app.hide_overlay()

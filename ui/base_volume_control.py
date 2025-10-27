@@ -6,7 +6,7 @@ from typing import Callable, Optional
 from PyQt5.QtWidgets import QWidget, QSlider, QPushButton, QLineEdit
 from PyQt5.QtCore import Qt, QTimer
 
-from config.constants import UIConstants
+from config import UIConstants
 
 
 class BaseVolumeControl(QWidget):
@@ -17,7 +17,7 @@ class BaseVolumeControl(QWidget):
         self.previous_volume: int = 100
         self.slider: Optional[QSlider] = None
         self.volume_text: Optional[QLineEdit] = None
-        self.mute_btn: Optional[QPushButton] = None
+        self.mute_button: Optional[QPushButton] = None
         self.is_muted: bool = False
     
     def init_volume_state(self, current_volume: int, is_muted: bool = False) -> None:
@@ -27,8 +27,8 @@ class BaseVolumeControl(QWidget):
     
     def update_mute_icon(self, is_muted: bool) -> None:
         """Update mute button icon based on mute state"""
-        if self.mute_btn:
-            self.mute_btn.setText("🔇" if is_muted else "🔊")
+        if self.mute_button:
+            self.mute_button.setText("🔇" if is_muted else "🔊")
     
     def handle_volume_slider_change(self, value: int, set_volume_callback: Callable[[float], bool]) -> None:
         """Handle slider value change with common logic"""

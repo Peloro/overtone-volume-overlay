@@ -6,7 +6,8 @@ class AppInfo:
     """Application information constants"""
     APP_NAME = "Overtone"
     VERSION = "1.0.0"
-    DESCRIPTION = "A modern, lightweight volume mixer overlay for Windows with per-application volume control."
+    DESCRIPTION = "A modern, lightweight volume mixer overlay for Windows with per-application volume control. If you like the" \
+    "project, feel free to star and watch the repository on GitHub"
     AUTHOR = "Peloro"
     GITHUB_URL = "https://github.com/Peloro"
     REPO_URL = "https://github.com/Peloro/overtone-volume-overlay"
@@ -18,8 +19,8 @@ class UIConstants:
     """UI dimension and timing constants"""
     DEFAULT_OVERLAY_WIDTH = 300
     DEFAULT_OVERLAY_HEIGHT = 300
-    MIN_OVERLAY_WIDTH = 300
-    MIN_OVERLAY_HEIGHT = 320
+    MIN_OVERLAY_WIDTH = 280  # Reduced to allow 300x400 but still prevent extreme deformation
+    MIN_OVERLAY_HEIGHT = 350
     MAX_OVERLAY_WIDTH = 1000
     MAX_OVERLAY_HEIGHT = 1000
     

@@ -40,6 +40,7 @@ class VolumeOverlay(QWidget):
         self.resize(self.app.settings_manager.overlay_width, self.app.settings_manager.overlay_height)
         self.move(0, 0)
         self.setMinimumSize(UIConstants.MIN_OVERLAY_WIDTH, UIConstants.MIN_OVERLAY_HEIGHT)
+        self.setMaximumSize(UIConstants.MAX_OVERLAY_WIDTH, UIConstants.MAX_OVERLAY_HEIGHT)
         
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(*[UIConstants.LAYOUT_MARGIN] * 4)

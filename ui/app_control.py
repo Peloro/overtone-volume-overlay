@@ -48,11 +48,25 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         layout.setSpacing(UIConstants.CONTROL_SPACING)
         self.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.APP_CONTROL_BG))
         
+        # Set minimum size to prevent deformation
+        self.setMinimumHeight(UIConstants.APP_CONTROL_HEIGHT)
+        self.setMinimumWidth(200)  # Minimum width to keep controls readable
+        
         name_label = QLabel(self.session['name'])
         name_label.setStyleSheet(StyleSheets.get_label_stylesheet())
+        name_label.setMinimumWidth(0)  # Allow text to be elided
+        name_label.setWordWrap(False)  # Prevent wrapping
+        name_label.setTextFormat(Qt.PlainText)  # Use plain text
+        name_label.setSizePolicy(name_label.sizePolicy().Ignored, name_label.sizePolicy().Preferred)
+        # Elide text from the middle to keep both start and end visible
+        font_metrics = name_label.fontMetrics()
+        elided_text = font_metrics.elidedText(self.session['name'], Qt.ElideMiddle, 280)
+        name_label.setText(elided_text)
+        name_label.setToolTip(self.session['name'])  # Show full name on hover
         layout.addWidget(name_label)
         
         control_layout = QHBoxLayout()
+        control_layout.setSpacing(UIConstants.CONTROL_SPACING)
         
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(0)
@@ -60,9 +74,11 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         self.slider.setValue(int(self.session['volume'] * 100))
         self.slider.setStyleSheet(StyleSheets.get_app_slider_stylesheet())
         self.slider.valueChanged.connect(self.on_slider_changed)
+        self.slider.setMinimumWidth(80)  # Minimum slider width
         
         self.volume_text = QLineEdit()
         self.volume_text.setFixedWidth(UIConstants.VOLUME_TEXT_WIDTH)
+        self.volume_text.setMinimumWidth(UIConstants.VOLUME_TEXT_WIDTH)
         self.volume_text.setText(str(int(self.session['volume'] * 100)))
         self.volume_text.setStyleSheet(StyleSheets.get_volume_text_stylesheet())
         self.volume_text.setReadOnly(False)
@@ -72,12 +88,13 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         is_muted = self.session.get('muted', False)
         self.mute_btn = QPushButton("🔇" if is_muted else "🔊")
         self.mute_btn.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
+        self.mute_btn.setMinimumSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
         self.mute_btn.setStyleSheet(StyleSheets.get_mute_button_stylesheet(is_master=False))
         self.mute_btn.clicked.connect(self.on_mute_clicked)
         
-        control_layout.addWidget(self.slider)
-        control_layout.addWidget(self.volume_text)
-        control_layout.addWidget(self.mute_btn)
+        control_layout.addWidget(self.slider, 1)  # Give slider stretch factor
+        control_layout.addWidget(self.volume_text, 0)
+        control_layout.addWidget(self.mute_btn, 0)
         layout.addLayout(control_layout)
     
     def on_slider_changed(self, value: int) -> None:

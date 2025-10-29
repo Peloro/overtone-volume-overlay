@@ -65,6 +65,8 @@ class VolumeOverlay(QWidget):
         self.container_layout.setAlignment(Qt.AlignTop)
         self.container_layout.setContentsMargins(*[UIConstants.FRAME_MARGIN] * 4)
         self.container_layout.setSpacing(UIConstants.FRAME_SPACING)
+        # Add stretch at the bottom to push all controls to the top
+        self.container_layout.addStretch(1)
         self.container.setStyleSheet(StyleSheets.get_frame_stylesheet())
         
         main_layout.addWidget(self.container, 1)
@@ -230,7 +232,7 @@ class VolumeOverlay(QWidget):
                 widget.deleteLater()
 
         # Add or update controls for sessions on this page
-        for session in page_sessions:
+        for i, session in enumerate(page_sessions):
             name = session['name']
             control = self.app_controls.get(name)
             if control:
@@ -238,7 +240,8 @@ class VolumeOverlay(QWidget):
                     control.update_session(session)
             else:
                 control = AppVolumeControl(session, self.app.audio_controller)
-                self.container_layout.addWidget(control)
+                # Insert before the stretch item (which is always last)
+                self.container_layout.insertWidget(self.container_layout.count() - 1, control)
                 self.app_controls[name] = control
     
     def _update_pagination_ui(self, current_page: int, total_pages: int) -> None:
@@ -263,7 +266,7 @@ class VolumeOverlay(QWidget):
     
     def clear_all_controls(self) -> None:
         """Clear all app controls from layout"""
-        # First, remove and delete all tracked controls
+        # Remove and delete all tracked controls
         for name in list(self.app_controls.keys()):
             widget = self.app_controls.pop(name, None)
             if widget:
@@ -271,17 +274,15 @@ class VolumeOverlay(QWidget):
                 widget.setParent(None)
                 widget.deleteLater()
         
-        # Then clean up any remaining layout items (spacers, etc.)
-        while self.container_layout.count():
+        # Clean up any widgets except the stretch item
+        # The stretch is always the last item, so we keep count > 1 to preserve it
+        while self.container_layout.count() > 1:
             item = self.container_layout.takeAt(0)
             if item:
                 widget = item.widget()
                 if widget:
                     widget.setParent(None)
                     widget.deleteLater()
-        
-        # Add single stretch at end
-        self.container_layout.addStretch()
     
     def previous_page(self) -> None:
         """Go to previous page"""

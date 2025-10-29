@@ -48,9 +48,14 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         layout.setSpacing(UIConstants.CONTROL_SPACING)
         self.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.APP_CONTROL_BG))
         
-        # Set minimum size to prevent deformation
-        self.setMinimumHeight(UIConstants.APP_CONTROL_HEIGHT)
+        # Set fixed size to prevent deformation and expansion
+        self.setFixedHeight(UIConstants.APP_CONTROL_HEIGHT)
         self.setMinimumWidth(UIConstants.MIN_CONTROL_WIDTH)
+        self.setMaximumHeight(UIConstants.APP_CONTROL_HEIGHT)
+        
+        # Set size policy to prevent expansion
+        from PyQt5.QtWidgets import QSizePolicy
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         
         name_label = QLabel(self.session['name'])
         name_label.setStyleSheet(StyleSheets.get_label_stylesheet())

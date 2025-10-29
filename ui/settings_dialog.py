@@ -259,28 +259,45 @@ class SettingsDialog(QDialog):
         """Create a color picker button"""
         button = QPushButton()
         button.setMinimumHeight(30)
-        button.setMaximumWidth(100)
+        button.setMinimumWidth(90)
+        button.setStyleSheet("font-size: 8px;")
         button.clicked.connect(callback)
         self._update_color_button(button, color)
         return button
     
     def _update_color_button(self, button: QPushButton, color: str):
         """Update button appearance to show the color"""
-        # Handle rgba format
-        if color.startswith("rgba"):
-            # Extract RGB values from rgba string
-            color_str = color.replace("rgba(", "").replace(")", "").replace("{alpha}", "255")
-            parts = [int(x.strip()) for x in color_str.split(",")]
+        # We'll display colors to the user using an rgba tuple inside parentheses
+        # e.g. "(30, 30, 30, 255)" — no 'rgb' or 'rgba' prefix
+        try:
+            if isinstance(color, str) and color.startswith("rgba"):
+                # Extract RGBA values from rgba string; replace {alpha} with 255 for display
+                color_str = color.replace("rgba(", "").replace(")", "").replace("{alpha}", "255")
+                parts = [int(x.strip()) for x in color_str.split(",")]
+                r, g, b, a = parts[0], parts[1], parts[2], parts[3] if len(parts) > 3 else 255
+                display_text = f"({r}, {g}, {b}, {a})"
+                bg_css = f"rgba({r}, {g}, {b}, {a})"
+            else:
+                # Assume hex or other color format; convert to QColor then to rgba for display
+                q = QColor(color)
+                r, g, b, a = q.red(), q.green(), q.blue(), q.alpha()
+                display_text = f"({r}, {g}, {b}, {a})"
+                bg_css = q.name()  # keep hex in stylesheet for simplicity
+
+            # Apply stylesheet: use bg_css for background (bg_css may be hex or rgba)
+            # Ensure readable text color for hex backgrounds
+            text_color = 'white'
             button.setStyleSheet(f"""
                 QPushButton {{
-                    background-color: rgba({parts[0]}, {parts[1]}, {parts[2]}, 255);
+                    background-color: {bg_css};
+                    color: {text_color};
                     border: 2px solid #666;
                     border-radius: 3px;
                 }}
             """)
-            button.setText(f"RGB({parts[0]}, {parts[1]}, {parts[2]})")
-        else:
-            # Handle hex format
+            button.setText(display_text)
+        except Exception:
+            # Fallback: show raw color string if parsing fails
             button.setStyleSheet(f"""
                 QPushButton {{
                     background-color: {color};
@@ -289,7 +306,7 @@ class SettingsDialog(QDialog):
                     border-radius: 3px;
                 }}
             """)
-            button.setText(color)
+            button.setText(str(color))
     
     def _pick_color(self, setting_key: str, button: QPushButton, title: str):
         """Open color picker and update setting"""

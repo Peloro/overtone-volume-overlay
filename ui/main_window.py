@@ -33,6 +33,9 @@ class VolumeOverlay(QWidget):
         self._filter_timer.setSingleShot(True)
         self._filter_timer.timeout.connect(self.apply_filter)
         
+        # Hide window before initializing UI to prevent flash on startup
+        self.hide()
+        
         self.init_ui()
     
     def init_ui(self):
@@ -53,10 +56,13 @@ class VolumeOverlay(QWidget):
         
         self.master_control = MasterVolumeControl(self.app.audio_controller)
         main_layout.addWidget(self.master_control)
+        # Set initial visibility based on settings
+        self.master_control.setVisible(self.app.settings_manager.show_system_volume)
         
         self.filter_bar = self._create_filter_bar()
         main_layout.addWidget(self.filter_bar)
-        self.filter_bar.setVisible(False)  # Hidden by default
+        # Set initial visibility based on settings
+        self.update_filter_display_mode()
         
         self.container = QFrame()
         self.container.setMinimumHeight(0)
@@ -92,7 +98,7 @@ class VolumeOverlay(QWidget):
         title_layout.addWidget(title_label)
         title_layout.addStretch()
         
-        # Create filter toggle button
+        # Create filter toggle button (visibility will be set later)
         self.filter_toggle_btn = create_standard_button("⌕", self.toggle_filter, "Show/Hide filter", StyleSheets.get_settings_button_stylesheet())
         title_layout.addWidget(self.filter_toggle_btn)
         
@@ -108,6 +114,10 @@ class VolumeOverlay(QWidget):
     
     def toggle_filter(self):
         """Toggle the visibility of the filter bar"""
+        # Don't allow toggling if always_show_filter is enabled
+        if self.app.settings_manager.always_show_filter:
+            return
+        
         self.filter_visible = not self.filter_visible
         self.filter_bar.setVisible(self.filter_visible)
         
@@ -115,9 +125,13 @@ class VolumeOverlay(QWidget):
         if self.filter_visible:
             self.filter_input.setFocus()
         else:
-            # Clear filter when hiding
+            # Clear filter when hiding and reapply to show all apps
             if self.filter_text:
-                self.clear_filter()
+                self.filter_input.clear()  # This triggers on_filter_changed -> apply_filter
+        
+        # Recalculate pagination since available space has changed
+        if hasattr(self, 'all_sessions'):
+            self.update_page_display()
     
     def _create_filter_bar(self) -> QFrame:
         """Create the search/filter bar"""
@@ -172,6 +186,39 @@ class VolumeOverlay(QWidget):
         # Use setWindowOpacity for direct window transparency control
         self.setWindowOpacity(opacity)
     
+    def update_system_volume_visibility(self):
+        """Update the visibility of the system volume control based on settings"""
+        show_system_volume = self.app.settings_manager.show_system_volume
+        self.master_control.setVisible(show_system_volume)
+        
+        # Recalculate pagination since available space has changed
+        # Only if the UI is fully initialized
+        if hasattr(self, 'all_sessions') and hasattr(self, 'container_layout'):
+            self.update_page_display()
+    
+    def update_filter_display_mode(self):
+        """Update filter display based on always_show_filter setting"""
+        always_show = self.app.settings_manager.always_show_filter
+        
+        if always_show:
+            # Always show mode: hide toggle button, always show filter bar
+            self.filter_toggle_btn.setVisible(False)
+            self.filter_bar.setVisible(True)
+            self.filter_visible = True
+        else:
+            # Toggle mode: show toggle button, hide filter bar (user can toggle it manually)
+            self.filter_toggle_btn.setVisible(True)
+            self.filter_bar.setVisible(False)
+            self.filter_visible = False
+            # Clear any active filter when switching to toggle mode
+            if self.filter_text:
+                self.filter_input.clear()
+        
+        # Recalculate pagination since available space may have changed
+        # Only if the UI is fully initialized
+        if hasattr(self, 'all_sessions') and hasattr(self, 'container_layout'):
+            self.update_page_display()
+    
     def on_filter_changed(self, text: str) -> None:
         """Handle filter text change"""
         self.filter_text = text.lower().strip()
@@ -198,7 +245,24 @@ class VolumeOverlay(QWidget):
     
     def get_apps_per_page(self) -> int:
         """Calculate how many apps can fit in current window height"""
-        return max(1, (self.height() - UIConstants.RESERVED_HEIGHT) // UIConstants.APP_CONTROL_HEIGHT)
+        # Calculate reserved height based on visible components
+        reserved_height = UIConstants.RESERVED_HEIGHT
+        
+        # Subtract master volume height if hidden
+        if not self.app.settings_manager.show_system_volume:
+            reserved_height -= UIConstants.MASTER_VOLUME_HEIGHT
+        
+        # The filter bar is already included in RESERVED_HEIGHT, so we only adjust
+        # if it's hidden (when not in always_show mode and not currently visible)
+        if not self.app.settings_manager.always_show_filter and not self.filter_visible:
+            reserved_height -= UIConstants.FILTER_BAR_HEIGHT
+        
+        # Add extra padding to prevent overlap (spacing between controls)
+        available_height = self.height() - reserved_height
+        # Account for spacing between controls
+        apps_that_fit = available_height // (UIConstants.APP_CONTROL_HEIGHT + UIConstants.FRAME_SPACING)
+        
+        return max(1, apps_that_fit)
     
     def _handle_no_sessions(self) -> None:
         """Handle display when there are no filtered sessions"""

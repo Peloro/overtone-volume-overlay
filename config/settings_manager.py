@@ -40,7 +40,9 @@ class SettingsManager:
             "hotkey_open": Hotkeys.DEFAULT_HOTKEY_OPEN,
             "hotkey_settings": Hotkeys.DEFAULT_HOTKEY_SETTINGS,
             "hotkey_quit": Hotkeys.DEFAULT_HOTKEY_QUIT,
-            "confirm_on_quit": True
+            "confirm_on_quit": True,
+            "show_system_volume": True,
+            "always_show_filter": False
         }
     
     def load_settings(self) -> None:
@@ -93,7 +95,9 @@ class SettingsManager:
             ("hotkey_open", Hotkeys.DEFAULT_HOTKEY_OPEN),
             ("hotkey_settings", Hotkeys.DEFAULT_HOTKEY_SETTINGS),
             ("hotkey_quit", Hotkeys.DEFAULT_HOTKEY_QUIT),
-            ("confirm_on_quit", True)
+            ("confirm_on_quit", True),
+            ("show_system_volume", True),
+            ("always_show_filter", False)
         ]:
             self.settings.setdefault(key, default)
     
@@ -158,3 +162,11 @@ class SettingsManager:
     @property
     def confirm_on_quit(self) -> bool:
         return self.settings.get("confirm_on_quit", True)
+    
+    @property
+    def show_system_volume(self) -> bool:
+        return self.settings.get("show_system_volume", True)
+    
+    @property
+    def always_show_filter(self) -> bool:
+        return self.settings.get("always_show_filter", False)

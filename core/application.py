@@ -35,6 +35,7 @@ class VolumeOverlayApp:
         self.audio_controller = AudioController()
         
         self.overlay = VolumeOverlay(self)
+        self.overlay.hide()  # Start hidden to prevent flash on startup
         self.settings_dialog = SettingsDialog(self)
         
         self.tray_icon = SystemTrayIcon(self)

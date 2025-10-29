@@ -104,7 +104,21 @@ class SettingsDialog(QDialog):
         self.confirm_quit_checkbox.setStyleSheet("QCheckBox { color: white; }")
         self.confirm_quit_checkbox.stateChanged.connect(self.on_confirm_quit_changed)
         
-        behavior_group = self._create_group_with_form("Behavior", [self.confirm_quit_checkbox])
+        self.show_system_volume_checkbox = QCheckBox("Show system volume control in overlay")
+        self.show_system_volume_checkbox.setChecked(self.app.settings_manager.show_system_volume)
+        self.show_system_volume_checkbox.setStyleSheet("QCheckBox { color: white; }")
+        self.show_system_volume_checkbox.stateChanged.connect(self.on_show_system_volume_changed)
+        
+        self.always_show_filter_checkbox = QCheckBox("Always show filter textbox (hide toggle button)")
+        self.always_show_filter_checkbox.setChecked(self.app.settings_manager.always_show_filter)
+        self.always_show_filter_checkbox.setStyleSheet("QCheckBox { color: white; }")
+        self.always_show_filter_checkbox.stateChanged.connect(self.on_always_show_filter_changed)
+        
+        behavior_group = self._create_group_with_form("Behavior", [
+            self.confirm_quit_checkbox,
+            self.show_system_volume_checkbox,
+            self.always_show_filter_checkbox
+        ])
         
         # Hotkey group
         self.hotkey_open_edit = QLineEdit(self.app.settings_manager.hotkey_open)
@@ -279,6 +293,18 @@ class SettingsDialog(QDialog):
     def on_confirm_quit_changed(self, state: int) -> None:
         """Handle confirm quit checkbox change"""
         self.app.settings_manager.set("confirm_on_quit", bool(state))
+        self.app.settings_manager.save_settings(debounce=False)  # Immediate for checkbox
+    
+    def on_show_system_volume_changed(self, state: int) -> None:
+        """Handle show system volume checkbox change"""
+        self.app.settings_manager.set("show_system_volume", bool(state))
+        self.app.overlay.update_system_volume_visibility()
+        self.app.settings_manager.save_settings(debounce=False)  # Immediate for checkbox
+    
+    def on_always_show_filter_changed(self, state: int) -> None:
+        """Handle always show filter checkbox change"""
+        self.app.settings_manager.set("always_show_filter", bool(state))
+        self.app.overlay.update_filter_display_mode()
         self.app.settings_manager.save_settings(debounce=False)  # Immediate for checkbox
     
     def on_hotkey_changed(self) -> None:

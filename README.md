@@ -53,18 +53,17 @@ The application starts minimized to the system tray. Double-click the tray icon 
 - **Ctrl+Shift+S** - Open settings
 - **Ctrl+Shift+Q** - Quit application
 
-Note: On Windows, registering system-wide hotkeys typically requires administrator privileges. This application requests admin rights when built as an executable so the hotkeys work globally.
-
 ### Controls
 
 **Overtone Overlay:**
 - Drag the title bar to move the window
-- Use sliders to adjust volume (0-100%)
-- Click volume numbers to type exact values
+- Use sliders or scroll wheel to adjust volume (0-100%)
+- Edit volume values by clicking on the textbox
 - Click mute buttons (🔊/🔇) to toggle mute
 - Use arrow buttons (◀ ▶) to navigate between pages
 - Click ⚙️ to open settings
-- Click × to hide the overlay
+- Click × to close the overlay
+- Click _ to minimize to system tray
 
 **Pagination:**
 - The overlay automatically calculates how many applications fit in the current window size
@@ -77,7 +76,7 @@ Access settings via the system tray menu or hotkey (Ctrl+Shift+S):
 
 - **Width/Height** - Customize overlay dimensions (300-1000px)
 - **Opacity** - Adjust window transparency (0.1-1.0)
-- **Hotkeys** - Configure custom keyboard shortcuts (format: ctrl+shift+key)
+- **Hotkeys** - Configure custom keyboard shortcuts
 
 ## Technical Details
 
@@ -101,7 +100,10 @@ Access settings via the system tray menu or hotkey (Ctrl+Shift+S):
 Settings are automatically saved to `settings.json` in the application directory. The file includes:
 - Window dimensions
 - Opacity (adjustable in settings)
+- Color theme
+- Personalized behaviors
 - Custom hotkey bindings
+- About section information
 
 ## Development
 
@@ -115,33 +117,6 @@ pip install -r requirements.txt
 python main.py
 ```
 
-### Building
-
-To create a standalone executable:
-
-1. Ensure PyInstaller is installed:
-```bash
-pip install pyinstaller
-```
-
-2. Build the executable using the provided spec file:
-```bash
-python -m PyInstaller Overtone.spec --clean
-```
-
-Or simply run the build script:
-```bash
-build.bat
-```
-
-The executable will be created in the `dist` folder as `Overtone.exe`. This is a single-file executable that can be distributed without requiring Python installation.
-
-**Note:** The first build may take several minutes as PyInstaller analyzes dependencies and packages everything together.
-
-## Known Issues
-
-- Requires administrator privileges for global hotkey functionality
-- Some applications may not expose volume controls (system processes, protected apps)
 
 ## Contributing
 

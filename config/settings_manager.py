@@ -42,7 +42,17 @@ class SettingsManager:
             "hotkey_quit": Hotkeys.DEFAULT_HOTKEY_QUIT,
             "confirm_on_quit": True,
             "show_system_volume": True,
-            "always_show_filter": False
+            "always_show_filter": False,
+            # Color customization
+            "color_main_background": "rgba(30, 30, 30, {alpha})",
+            "color_title_bar_bg": "rgba(43, 43, 43, 255)",
+            "color_master_frame_bg": "rgba(30, 58, 95, 255)",
+            "color_container_bg": "rgba(43, 43, 43, 255)",
+            "color_app_control_bg": "rgba(50, 50, 50, 200)",
+            "color_master_slider_handle": "#4caf50",
+            "color_app_slider_handle": "#1e88e5",
+            "color_primary_button_bg": "#1e88e5",
+            "color_close_button_bg": "#d32f2f",
         }
     
     def load_settings(self) -> None:
@@ -170,3 +180,40 @@ class SettingsManager:
     @property
     def always_show_filter(self) -> bool:
         return self.settings.get("always_show_filter", False)
+    
+    # Color properties
+    @property
+    def color_main_background(self) -> str:
+        return self.settings.get("color_main_background", "rgba(30, 30, 30, {alpha})")
+    
+    @property
+    def color_title_bar_bg(self) -> str:
+        return self.settings.get("color_title_bar_bg", "rgba(43, 43, 43, 255)")
+    
+    @property
+    def color_master_frame_bg(self) -> str:
+        return self.settings.get("color_master_frame_bg", "rgba(30, 58, 95, 255)")
+    
+    @property
+    def color_container_bg(self) -> str:
+        return self.settings.get("color_container_bg", "rgba(43, 43, 43, 255)")
+    
+    @property
+    def color_app_control_bg(self) -> str:
+        return self.settings.get("color_app_control_bg", "rgba(50, 50, 50, 200)")
+    
+    @property
+    def color_master_slider_handle(self) -> str:
+        return self.settings.get("color_master_slider_handle", "#4caf50")
+    
+    @property
+    def color_app_slider_handle(self) -> str:
+        return self.settings.get("color_app_slider_handle", "#1e88e5")
+    
+    @property
+    def color_primary_button_bg(self) -> str:
+        return self.settings.get("color_primary_button_bg", "#1e88e5")
+    
+    @property
+    def color_close_button_bg(self) -> str:
+        return self.settings.get("color_close_button_bg", "#d32f2f")

@@ -153,3 +153,23 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         """Handle mouse leave event"""
         self._is_hovered = False
         super().leaveEvent(event)
+    
+    def apply_styles(self):
+        """Reapply all styles to reflect color changes"""
+        # Reapply frame background
+        self.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.APP_CONTROL_BG))
+        
+        # Reapply slider style
+        if self.slider:
+            self.slider.setStyleSheet(StyleSheets.get_app_slider_stylesheet())
+        
+        # Reapply volume text style
+        if self.volume_text:
+            self.volume_text.setStyleSheet(StyleSheets.get_volume_text_stylesheet())
+        
+        # Reapply mute button style
+        if self.mute_button:
+            self.mute_button.setStyleSheet(StyleSheets.get_mute_button_stylesheet(is_master=False))
+        
+        # Force update
+        self.update()

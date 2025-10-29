@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtGui import QIcon
 import keyboard
 
-from config import SettingsManager, UIConstants
+from config import SettingsManager, UIConstants, Colors
 from controllers import AudioController
 from ui import VolumeOverlay, SettingsDialog, SystemTrayIcon
 from .hotkey_handler import HotkeyHandler
@@ -31,6 +31,9 @@ class VolumeOverlayApp:
     
     def __init__(self) -> None:
         self.settings_manager = SettingsManager()
+        
+        # Initialize Colors with settings manager for customization
+        Colors.set_settings_manager(self.settings_manager)
         
         self.audio_controller = AudioController()
         

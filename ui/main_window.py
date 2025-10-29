@@ -405,3 +405,24 @@ class VolumeOverlay(QWidget):
         """Handle close event - hide instead of closing"""
         event.ignore()
         self.app.hide_overlay()
+    
+    def apply_styles(self):
+        """Reapply all styles to reflect color changes"""
+        # Reapply overlay stylesheet
+        self.setStyleSheet(StyleSheets.get_overlay_stylesheet())
+        
+        # Reapply title bar styles
+        if self.title_bar:
+            self.title_bar.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.TITLE_BAR_BG))
+        
+        # Reapply container styles
+        if self.container:
+            self.container.setStyleSheet(StyleSheets.get_frame_stylesheet())
+        
+        # Reapply styles to all app controls
+        for app_control in self.app_controls.values():
+            if hasattr(app_control, 'apply_styles'):
+                app_control.apply_styles()
+        
+        # Force update
+        self.update()

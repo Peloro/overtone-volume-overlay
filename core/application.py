@@ -5,7 +5,7 @@ Coordinates all components and manages application lifecycle
 import sys
 import os
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QApplication
 from PyQt5.QtGui import QIcon
 import keyboard
 
@@ -100,6 +100,16 @@ class VolumeOverlayApp:
             except Exception as e:
                 logger.error(f"Unexpected error unregistering hotkey: {e}")
         self._registered_hotkeys.clear()
+        # Ensure any remaining global keyboard hooks are removed as a last resort.
+        try:
+            if hasattr(keyboard, 'unhook_all_hotkeys'):
+                keyboard.unhook_all_hotkeys()
+                logger.debug("keyboard.unhook_all_hotkeys() called")
+            elif hasattr(keyboard, 'unhook_all'):
+                keyboard.unhook_all()
+                logger.debug("keyboard.unhook_all() called")
+        except Exception as e:
+            logger.debug(f"Error while unhooking keyboard listeners: {e}")
     
     def setup_hotkeys(self) -> None:
         """Setup global hotkeys"""
@@ -204,7 +214,25 @@ class VolumeOverlayApp:
         
         for widget in (self.tray_icon, self.overlay, self.settings_dialog):
             if hasattr(widget, 'hide'):
-                widget.hide()
+                try:
+                    widget.hide()
+                except Exception:
+                    pass
             if hasattr(widget, 'close'):
-                widget.close()
-        sys.exit(0)
+                try:
+                    widget.close()
+                except Exception:
+                    pass
+            # schedule for deletion to ensure Qt can fully release native resources
+            try:
+                if hasattr(widget, 'deleteLater'):
+                    widget.deleteLater()
+            except Exception:
+                pass
+        # Request the Qt event loop to exit cleanly instead of forcing immediate process termination.
+        try:
+            QApplication.quit()
+        except Exception:
+            # Fallback to immediate exit if quitting the Qt loop fails
+            import sys as _sys
+            _sys.exit(0)

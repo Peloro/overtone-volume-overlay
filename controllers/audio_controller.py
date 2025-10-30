@@ -270,3 +270,13 @@ class AudioController:
         
         # Just set to None - comtypes will handle cleanup automatically
         self.master_volume = None
+
+        # Try to uninitialize COM if available to ensure native resources are released.
+        try:
+            # Import locally to avoid a hard dependency in environments without comtypes
+            import comtypes
+            if hasattr(comtypes, 'CoUninitialize'):
+                comtypes.CoUninitialize()
+                logger.debug("Called comtypes.CoUninitialize() during cleanup")
+        except Exception as e:
+            logger.debug(f"Error during COM uninitialization: {e}")

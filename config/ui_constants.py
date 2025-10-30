@@ -6,9 +6,9 @@ UI Dimension and Timing Constants
 class UIConstants:
     """UI dimension and timing constants"""
     DEFAULT_OVERLAY_WIDTH = 300
-    DEFAULT_OVERLAY_HEIGHT = 300
+    DEFAULT_OVERLAY_HEIGHT = 350
     MIN_OVERLAY_WIDTH = 300
-    MIN_OVERLAY_HEIGHT = 300
+    MIN_OVERLAY_HEIGHT = 350
     MAX_OVERLAY_WIDTH = 1000
     MAX_OVERLAY_HEIGHT = 1000
     

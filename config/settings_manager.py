@@ -132,7 +132,31 @@ class SettingsManager:
     
     def set(self, key: str, value: Any) -> None:
         """Set a setting value"""
-        self.settings[key] = value
+        # For overlay dimensions and opacity, clamp incoming values immediately
+        if key in ("overlay_width", "overlay_height"):
+            # ensure we work with ints; fall back to defaults on bad input
+            try:
+                v = int(value)
+            except (TypeError, ValueError):
+                v = UIConstants.DEFAULT_OVERLAY_WIDTH if key == "overlay_width" else UIConstants.DEFAULT_OVERLAY_HEIGHT
+
+            if key == "overlay_width":
+                minv = UIConstants.MIN_OVERLAY_WIDTH
+                maxv = UIConstants.MAX_OVERLAY_WIDTH
+            else:
+                minv = UIConstants.MIN_OVERLAY_HEIGHT
+                maxv = UIConstants.MAX_OVERLAY_HEIGHT
+
+            self.settings[key] = max(minv, min(maxv, v))
+        elif key == "overlay_opacity":
+            try:
+                v = float(value)
+            except (TypeError, ValueError):
+                v = UIConstants.DEFAULT_OPACITY
+
+            self.settings[key] = max(UIConstants.MIN_OPACITY, min(UIConstants.MAX_OPACITY, v))
+        else:
+            self.settings[key] = value
     
     def update(self, new_settings: Dict[str, Any]) -> None:
         """Update multiple settings at once"""

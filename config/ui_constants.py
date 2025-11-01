@@ -24,7 +24,7 @@ class UIConstants:
     ERROR_FLASH_DURATION_MS = 300  # Duration for error visual feedback
     NAME_CACHE_TTL_SECONDS = 30.0  # Increased TTL to reduce window enumeration
     
-    DEFAULT_OPACITY = 0.9
+    DEFAULT_OPACITY = 0.95
     MIN_OPACITY = 0.1
     MAX_OPACITY = 1.0
     

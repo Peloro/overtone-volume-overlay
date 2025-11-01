@@ -3,7 +3,7 @@
         "Default": {
             "overlay_width": 300,
             "overlay_height": 350,
-            "overlay_opacity": 0.9,
+            "overlay_opacity": 0.95,
             "hotkey_open": "ctrl+/",
             "hotkey_settings": "ctrl+shift+s",
             "hotkey_quit": "ctrl+q",
@@ -45,7 +45,7 @@
         "Dracula": {
             "overlay_width": 300,
             "overlay_height": 350,
-            "overlay_opacity": 0.9,
+            "overlay_opacity": 0.95,
             "hotkey_open": "ctrl+/",
             "hotkey_settings": "ctrl+shift+s",
             "hotkey_quit": "ctrl+q",
@@ -66,7 +66,7 @@
         "Monokai": {
             "overlay_width": 300,
             "overlay_height": 350,
-            "overlay_opacity": 0.9,
+            "overlay_opacity": 0.95,
             "hotkey_open": "ctrl+/",
             "hotkey_settings": "ctrl+shift+s",
             "hotkey_quit": "ctrl+q",
@@ -87,7 +87,7 @@
         "Solarized Dark": {
             "overlay_width": 300,
             "overlay_height": 350,
-            "overlay_opacity": 0.9,
+            "overlay_opacity": 0.95,
             "hotkey_open": "ctrl+/",
             "hotkey_settings": "ctrl+shift+s",
             "hotkey_quit": "ctrl+q",
@@ -108,7 +108,7 @@
         "Gruvbox": {
             "overlay_width": 300,
             "overlay_height": 350,
-            "overlay_opacity": 0.9,
+            "overlay_opacity": 0.95,
             "hotkey_open": "ctrl+/",
             "hotkey_settings": "ctrl+shift+s",
             "hotkey_quit": "ctrl+q",
@@ -129,7 +129,7 @@
         "Oceanic": {
             "overlay_width": 300,
             "overlay_height": 350,
-            "overlay_opacity": 0.9,
+            "overlay_opacity": 0.95,
             "hotkey_open": "ctrl+/",
             "hotkey_settings": "ctrl+shift+s",
             "hotkey_quit": "ctrl+q",
@@ -150,7 +150,7 @@
         "Tokyo Night": {
             "overlay_width": 300,
             "overlay_height": 350,
-            "overlay_opacity": 0.9,
+            "overlay_opacity": 0.95,
             "hotkey_open": "ctrl+/",
             "hotkey_settings": "ctrl+shift+s",
             "hotkey_quit": "ctrl+q",
@@ -171,7 +171,7 @@
         "Catppuccin Mocha": {
             "overlay_width": 300,
             "overlay_height": 350,
-            "overlay_opacity": 0.9,
+            "overlay_opacity": 0.95,
             "hotkey_open": "ctrl+/",
             "hotkey_settings": "ctrl+shift+s",
             "hotkey_quit": "ctrl+q",
@@ -192,7 +192,7 @@
         "Sunset": {
             "overlay_width": 300,
             "overlay_height": 350,
-            "overlay_opacity": 0.9,
+            "overlay_opacity": 0.95,
             "hotkey_open": "ctrl+/",
             "hotkey_settings": "ctrl+shift+s",
             "hotkey_quit": "ctrl+q",

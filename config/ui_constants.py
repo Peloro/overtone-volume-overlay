@@ -54,6 +54,6 @@ class UIConstants:
 
 class Hotkeys:
     """Default hotkey configurations"""
-    DEFAULT_HOTKEY_OPEN = "ctrl+shift+v"
+    DEFAULT_HOTKEY_OPEN = "ctrl+/"
     DEFAULT_HOTKEY_SETTINGS = "ctrl+shift+s"
-    DEFAULT_HOTKEY_QUIT = "ctrl+shift+q"
+    DEFAULT_HOTKEY_QUIT = "ctrl+q"

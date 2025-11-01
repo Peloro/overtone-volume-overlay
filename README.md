@@ -32,9 +32,9 @@ python main.py
 ## Usage
 
 **Default Hotkeys:**
-- `Ctrl+Shift+V` - Toggle overlay
+- `Ctrl+/` - Toggle overlay
 - `Ctrl+Shift+S` - Open settings
-- `Ctrl+Shift+Q` - Quit application
+- `Ctrl+Q` - Quit application
 
 **Controls:**
 - Drag title bar to move window

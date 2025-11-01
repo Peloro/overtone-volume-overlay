@@ -345,16 +345,21 @@ class SettingsDialog(QDialog):
         
         self.app.settings_manager.update(defaults)
         
-        # Update all color buttons
-        self._update_color_button(self.color_title_bar_btn, defaults["color_title_bar_bg"])
-        self._update_color_button(self.color_master_frame_btn, defaults["color_master_frame_bg"])
-        self._update_color_button(self.color_container_btn, defaults["color_container_bg"])
-        self._update_color_button(self.color_app_control_btn, defaults["color_app_control_bg"])
-        self._update_color_button(self.color_master_slider_btn, defaults["color_master_slider_handle"])
-        self._update_color_button(self.color_app_slider_btn, defaults["color_app_slider_handle"])
-        self._update_color_button(self.color_primary_button_btn, defaults["color_primary_button_bg"])
-        self._update_color_button(self.color_close_button_btn, defaults["color_close_button_bg"])
-        self._update_color_button(self.color_text_btn, defaults["color_text_white"])
+        # Update all color buttons using mapping
+        button_mapping = [
+            (self.color_title_bar_btn, "color_title_bar_bg"),
+            (self.color_master_frame_btn, "color_master_frame_bg"),
+            (self.color_container_btn, "color_container_bg"),
+            (self.color_app_control_btn, "color_app_control_bg"),
+            (self.color_master_slider_btn, "color_master_slider_handle"),
+            (self.color_app_slider_btn, "color_app_slider_handle"),
+            (self.color_primary_button_btn, "color_primary_button_bg"),
+            (self.color_close_button_btn, "color_close_button_bg"),
+            (self.color_text_btn, "color_text_white"),
+        ]
+        
+        for button, key in button_mapping:
+            self._update_color_button(button, defaults[key])
         
         # Refresh the overlay to apply new colors
         self.refresh_overlay_colors()
@@ -418,10 +423,8 @@ class SettingsDialog(QDialog):
         # Profile actions - grouped by color
         actions_layout = QHBoxLayout()
         
-        # Blue buttons (primary actions)
-        switch_profile_btn = QPushButton("Switch to Selected")
-        switch_profile_btn.clicked.connect(self.on_switch_profile)
-        switch_profile_btn.setStyleSheet("""
+        # Button style constants
+        primary_style = """
             QPushButton {
                 background-color: #1e88e5;
                 color: white;
@@ -432,38 +435,8 @@ class SettingsDialog(QDialog):
             QPushButton:hover {
                 background-color: #42a5f5;
             }
-        """)
-        actions_layout.addWidget(switch_profile_btn)
-        
-        save_to_profile_btn = QPushButton("Save to Active Profile")
-        save_to_profile_btn.clicked.connect(self.on_save_to_active_profile)
-        save_to_profile_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #1e88e5;
-                color: white;
-                border: none;
-                border-radius: 3px;
-                padding: 8px 15px;
-            }
-            QPushButton:hover {
-                background-color: #42a5f5;
-            }
-        """)
-        actions_layout.addWidget(save_to_profile_btn)
-        
-        # Regular buttons
-        new_profile_btn = QPushButton("New Profile")
-        new_profile_btn.clicked.connect(self.on_new_profile)
-        actions_layout.addWidget(new_profile_btn)
-        
-        rename_profile_btn = QPushButton("Rename")
-        rename_profile_btn.clicked.connect(self.on_rename_profile)
-        actions_layout.addWidget(rename_profile_btn)
-        
-        # Red button (destructive action)
-        delete_profile_btn = QPushButton("Delete")
-        delete_profile_btn.clicked.connect(self.on_delete_profile)
-        delete_profile_btn.setStyleSheet("""
+        """
+        danger_style = """
             QPushButton {
                 background-color: #d32f2f;
                 color: white;
@@ -474,8 +447,21 @@ class SettingsDialog(QDialog):
             QPushButton:hover {
                 background-color: #f44336;
             }
-        """)
-        actions_layout.addWidget(delete_profile_btn)
+        """
+        
+        # Create buttons with styles
+        for text, callback, style in [
+            ("Switch to Selected", self.on_switch_profile, primary_style),
+            ("Save to Active Profile", self.on_save_to_active_profile, primary_style),
+            ("New Profile", self.on_new_profile, None),
+            ("Rename", self.on_rename_profile, None),
+            ("Delete", self.on_delete_profile, danger_style),
+        ]:
+            btn = QPushButton(text)
+            btn.clicked.connect(callback)
+            if style:
+                btn.setStyleSheet(style)
+            actions_layout.addWidget(btn)
         
         profiles_widget.addLayout(actions_layout)
         
@@ -627,27 +613,34 @@ class SettingsDialog(QDialog):
     
     def refresh_overlay_after_profile_switch(self):
         """Refresh the overlay after switching profiles"""
-        # Update all UI elements to reflect the new profile settings
-        self.width_spin.setValue(self.app.settings_manager.overlay_width)
-        self.height_spin.setValue(self.app.settings_manager.overlay_height)
-        self.opacity_spin.setValue(self.app.settings_manager.overlay_opacity)
-        self.hotkey_open_edit.setText(self.app.settings_manager.hotkey_open)
-        self.hotkey_settings_edit.setText(self.app.settings_manager.hotkey_settings)
-        self.hotkey_quit_edit.setText(self.app.settings_manager.hotkey_quit)
-        self.confirm_quit_checkbox.setChecked(self.app.settings_manager.confirm_on_quit)
-        self.show_system_volume_checkbox.setChecked(self.app.settings_manager.show_system_volume)
-        self.always_show_filter_checkbox.setChecked(self.app.settings_manager.always_show_filter)
+        sm = self.app.settings_manager
         
-        # Update color buttons
-        self._update_color_button(self.color_title_bar_btn, self.app.settings_manager.color_title_bar_bg)
-        self._update_color_button(self.color_master_frame_btn, self.app.settings_manager.color_master_frame_bg)
-        self._update_color_button(self.color_container_btn, self.app.settings_manager.color_container_bg)
-        self._update_color_button(self.color_app_control_btn, self.app.settings_manager.color_app_control_bg)
-        self._update_color_button(self.color_master_slider_btn, self.app.settings_manager.color_master_slider_handle)
-        self._update_color_button(self.color_app_slider_btn, self.app.settings_manager.color_app_slider_handle)
-        self._update_color_button(self.color_primary_button_btn, self.app.settings_manager.color_primary_button_bg)
-        self._update_color_button(self.color_close_button_btn, self.app.settings_manager.color_close_button_bg)
-        self._update_color_button(self.color_text_btn, self.app.settings_manager.color_text_white)
+        # Update all UI elements to reflect the new profile settings
+        self.width_spin.setValue(sm.overlay_width)
+        self.height_spin.setValue(sm.overlay_height)
+        self.opacity_spin.setValue(sm.overlay_opacity)
+        self.hotkey_open_edit.setText(sm.hotkey_open)
+        self.hotkey_settings_edit.setText(sm.hotkey_settings)
+        self.hotkey_quit_edit.setText(sm.hotkey_quit)
+        self.confirm_quit_checkbox.setChecked(sm.confirm_on_quit)
+        self.show_system_volume_checkbox.setChecked(sm.show_system_volume)
+        self.always_show_filter_checkbox.setChecked(sm.always_show_filter)
+        
+        # Update color buttons using mapping
+        button_mapping = [
+            (self.color_title_bar_btn, sm.color_title_bar_bg),
+            (self.color_master_frame_btn, sm.color_master_frame_bg),
+            (self.color_container_btn, sm.color_container_bg),
+            (self.color_app_control_btn, sm.color_app_control_bg),
+            (self.color_master_slider_btn, sm.color_master_slider_handle),
+            (self.color_app_slider_btn, sm.color_app_slider_handle),
+            (self.color_primary_button_btn, sm.color_primary_button_bg),
+            (self.color_close_button_btn, sm.color_close_button_bg),
+            (self.color_text_btn, sm.color_text_white),
+        ]
+        
+        for button, color in button_mapping:
+            self._update_color_button(button, color)
         
         # Refresh overlay
         self.app.overlay.resize(self.app.settings_manager.overlay_width, self.app.settings_manager.overlay_height)

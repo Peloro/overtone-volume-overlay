@@ -98,16 +98,19 @@ class VolumeOverlay(QWidget):
         title_layout.addWidget(title_label)
         title_layout.addStretch()
         
-        # Create filter toggle button (visibility will be set later)
-        self.filter_toggle_btn = create_standard_button("⌕", self.toggle_filter, "Show/Hide filter", StyleSheets.get_settings_button_stylesheet())
-        title_layout.addWidget(self.filter_toggle_btn)
-        
-        for text, callback, tooltip, stylesheet in [
+        # Create filter toggle and control buttons
+        buttons = [
+            ("⌕", self.toggle_filter, "Show/Hide filter", StyleSheets.get_settings_button_stylesheet()),
             ("⚙", self.app.show_settings, "Settings", StyleSheets.get_settings_button_stylesheet()),
             ("—", self.hide, "Minimize to tray", StyleSheets.get_minimize_button_stylesheet()),
             ("×", self.app.confirm_quit, "Quit application", StyleSheets.get_close_button_stylesheet())
-        ]:
-            title_layout.addWidget(create_standard_button(text, callback, tooltip, stylesheet))
+        ]
+        
+        self.filter_toggle_btn = create_standard_button(*buttons[0])
+        title_layout.addWidget(self.filter_toggle_btn)
+        
+        for btn_config in buttons[1:]:
+            title_layout.addWidget(create_standard_button(*btn_config))
         
         title_bar.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.TITLE_BAR_BG))
         return title_bar
@@ -234,10 +237,11 @@ class VolumeOverlay(QWidget):
     
     def apply_filter(self) -> None:
         """Apply the current filter to sessions"""
-        self.filtered_sessions = self.all_sessions if not self.filter_text else [
-            s for s in self.all_sessions if self.filter_text in s['name'].lower()
-        ]
-        self.filtered_sessions.sort(key=lambda s: s['name'].lower())
+        if self.filter_text:
+            self.filtered_sessions = [s for s in self.all_sessions if self.filter_text in s['name'].lower()]
+            self.filtered_sessions.sort(key=lambda s: s['name'].lower())
+        else:
+            self.filtered_sessions = self.all_sessions
         self.update_page_display()
     
     def refresh_applications(self) -> None:
@@ -247,21 +251,17 @@ class VolumeOverlay(QWidget):
     
     def get_apps_per_page(self) -> int:
         """Calculate how many apps can fit in current window height"""
-        # Calculate reserved height based on visible components
         reserved_height = UIConstants.RESERVED_HEIGHT
         
-        # Subtract master volume height if hidden
+        # Adjust for hidden components
         if not self.app.settings_manager.show_system_volume:
             reserved_height -= UIConstants.MASTER_VOLUME_HEIGHT
         
-        # The filter bar is already included in RESERVED_HEIGHT, so we only adjust
-        # if it's hidden (when not in always_show mode and not currently visible)
-        if not self.app.settings_manager.always_show_filter and not self.filter_visible:
+        if not (self.app.settings_manager.always_show_filter or self.filter_visible):
             reserved_height -= UIConstants.FILTER_BAR_HEIGHT
         
-        # Add extra padding to prevent overlap (spacing between controls)
+        # Calculate available height and apps that fit
         available_height = self.height() - reserved_height
-        # Account for spacing between controls
         apps_that_fit = available_height // (UIConstants.APP_CONTROL_HEIGHT + UIConstants.FRAME_SPACING)
         
         return max(1, apps_that_fit)
@@ -291,19 +291,16 @@ class VolumeOverlay(QWidget):
 
         # Remove controls no longer on this page
         for name in set(self.app_controls.keys()) - current_names:
-            widget = self.app_controls.pop(name, None)
-            if widget:
+            if widget := self.app_controls.pop(name, None):
                 self.container_layout.removeWidget(widget)
                 widget.setParent(None)
                 widget.deleteLater()
 
         # Add or update controls for sessions on this page
-        for i, session in enumerate(page_sessions):
+        for session in page_sessions:
             name = session['name']
-            control = self.app_controls.get(name)
-            if control:
-                if hasattr(control, 'update_session'):
-                    control.update_session(session)
+            if control := self.app_controls.get(name):
+                control.update_session(session)
             else:
                 control = AppVolumeControl(session, self.app.audio_controller)
                 # Insert before the stretch item (which is always last)
@@ -332,17 +329,17 @@ class VolumeOverlay(QWidget):
     
     def clear_all_controls(self) -> None:
         """Clear all app controls from layout"""
-        for widget in list(self.app_controls.values()):
+        for widget in self.app_controls.values():
             self.container_layout.removeWidget(widget)
             widget.setParent(None)
             widget.deleteLater()
         self.app_controls.clear()
         
         while self.container_layout.count() > 1:
-            if item := self.container_layout.takeAt(0):
-                if widget := item.widget():
-                    widget.setParent(None)
-                    widget.deleteLater()
+            item = self.container_layout.takeAt(0)
+            if item and (widget := item.widget()):
+                widget.setParent(None)
+                widget.deleteLater()
     
     def previous_page(self) -> None:
         """Go to previous page"""
@@ -407,26 +404,19 @@ class VolumeOverlay(QWidget):
         # Reapply overlay stylesheet
         self.setStyleSheet(StyleSheets.get_overlay_stylesheet())
         
-        # Reapply title bar styles
-        if self.title_bar:
-            self.title_bar.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.TITLE_BAR_BG))
+        # Reapply component styles
+        style_updates = [
+            (self.title_bar, lambda: StyleSheets.get_frame_stylesheet(bg_color=Colors.TITLE_BAR_BG)),
+            (self.container, StyleSheets.get_frame_stylesheet),
+            (getattr(self, 'pagination_frame', None), StyleSheets.get_frame_stylesheet),
+            (getattr(self, 'previous_button', None), StyleSheets.get_pagination_button_stylesheet),
+            (getattr(self, 'next_button', None), StyleSheets.get_pagination_button_stylesheet),
+            (getattr(self, 'page_label', None), StyleSheets.get_page_label_stylesheet),
+        ]
         
-        # Reapply container styles
-        if self.container:
-            self.container.setStyleSheet(StyleSheets.get_frame_stylesheet())
-        
-        # Reapply pagination styles
-        if hasattr(self, 'pagination_frame') and self.pagination_frame:
-            self.pagination_frame.setStyleSheet(StyleSheets.get_frame_stylesheet())
-        
-        if hasattr(self, 'previous_button') and self.previous_button:
-            self.previous_button.setStyleSheet(StyleSheets.get_pagination_button_stylesheet())
-        
-        if hasattr(self, 'next_button') and self.next_button:
-            self.next_button.setStyleSheet(StyleSheets.get_pagination_button_stylesheet())
-        
-        if hasattr(self, 'page_label') and self.page_label:
-            self.page_label.setStyleSheet(StyleSheets.get_page_label_stylesheet())
+        for widget, stylesheet_func in style_updates:
+            if widget:
+                widget.setStyleSheet(stylesheet_func() if callable(stylesheet_func) else stylesheet_func)
         
         # Reapply styles to all app controls
         for app_control in self.app_controls.values():

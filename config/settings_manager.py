@@ -78,23 +78,24 @@ class SettingsManager:
         except Exception as e:
             logger.error(f"Error saving settings: {e}", exc_info=True)
     
-    def _clamp_value(self, key: str, min_val, max_val, default) -> Any:
-        """Clamp a setting value between min and max"""
-        return max(min_val, min(max_val, self.settings.get(key, default)))
+    @staticmethod
+    def _clamp_value(value, min_val, max_val) -> Any:
+        """Clamp a value between min and max"""
+        return max(min_val, min(max_val, value))
     
     def _validate_settings(self) -> None:
         """Validate and clamp settings to acceptable ranges"""
         self.settings["overlay_width"] = self._clamp_value(
-            "overlay_width", UIConstants.MIN_OVERLAY_WIDTH, 
-            UIConstants.MAX_OVERLAY_WIDTH, UIConstants.DEFAULT_OVERLAY_WIDTH
+            self.settings.get("overlay_width", UIConstants.DEFAULT_OVERLAY_WIDTH),
+            UIConstants.MIN_OVERLAY_WIDTH, UIConstants.MAX_OVERLAY_WIDTH
         )
         self.settings["overlay_height"] = self._clamp_value(
-            "overlay_height", UIConstants.MIN_OVERLAY_HEIGHT,
-            UIConstants.MAX_OVERLAY_HEIGHT, UIConstants.DEFAULT_OVERLAY_HEIGHT
+            self.settings.get("overlay_height", UIConstants.DEFAULT_OVERLAY_HEIGHT),
+            UIConstants.MIN_OVERLAY_HEIGHT, UIConstants.MAX_OVERLAY_HEIGHT
         )
         self.settings["overlay_opacity"] = self._clamp_value(
-            "overlay_opacity", UIConstants.MIN_OPACITY,
-            UIConstants.MAX_OPACITY, UIConstants.DEFAULT_OPACITY
+            self.settings.get("overlay_opacity", UIConstants.DEFAULT_OPACITY),
+            UIConstants.MIN_OPACITY, UIConstants.MAX_OPACITY
         )
         
         for key, default in [
@@ -129,28 +130,24 @@ class SettingsManager:
     def set(self, key: str, value: Any) -> None:
         """Set a setting value"""
         # For overlay dimensions and opacity, clamp incoming values immediately
-        if key in ("overlay_width", "overlay_height"):
-            # ensure we work with ints; fall back to defaults on bad input
+        if key == "overlay_width":
             try:
                 v = int(value)
             except (TypeError, ValueError):
-                v = UIConstants.DEFAULT_OVERLAY_WIDTH if key == "overlay_width" else UIConstants.DEFAULT_OVERLAY_HEIGHT
-
-            if key == "overlay_width":
-                minv = UIConstants.MIN_OVERLAY_WIDTH
-                maxv = UIConstants.MAX_OVERLAY_WIDTH
-            else:
-                minv = UIConstants.MIN_OVERLAY_HEIGHT
-                maxv = UIConstants.MAX_OVERLAY_HEIGHT
-
-            self.settings[key] = max(minv, min(maxv, v))
+                v = UIConstants.DEFAULT_OVERLAY_WIDTH
+            self.settings[key] = self._clamp_value(v, UIConstants.MIN_OVERLAY_WIDTH, UIConstants.MAX_OVERLAY_WIDTH)
+        elif key == "overlay_height":
+            try:
+                v = int(value)
+            except (TypeError, ValueError):
+                v = UIConstants.DEFAULT_OVERLAY_HEIGHT
+            self.settings[key] = self._clamp_value(v, UIConstants.MIN_OVERLAY_HEIGHT, UIConstants.MAX_OVERLAY_HEIGHT)
         elif key == "overlay_opacity":
             try:
                 v = float(value)
             except (TypeError, ValueError):
                 v = UIConstants.DEFAULT_OPACITY
-
-            self.settings[key] = max(UIConstants.MIN_OPACITY, min(UIConstants.MAX_OPACITY, v))
+            self.settings[key] = self._clamp_value(v, UIConstants.MIN_OPACITY, UIConstants.MAX_OPACITY)
         else:
             self.settings[key] = value
     

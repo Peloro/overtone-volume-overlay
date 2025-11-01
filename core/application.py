@@ -94,20 +94,19 @@ class VolumeOverlayApp:
         for hotkey_ref in self._registered_hotkeys:
             try:
                 keyboard.remove_hotkey(hotkey_ref)
-                logger.debug(f"Unregistered hotkey")
+                logger.debug("Unregistered hotkey")
             except (KeyError, ValueError) as e:
                 logger.debug(f"Hotkey already unregistered or invalid: {e}")
             except Exception as e:
                 logger.error(f"Unexpected error unregistering hotkey: {e}")
         self._registered_hotkeys.clear()
-        # Ensure any remaining global keyboard hooks are removed as a last resort.
+        
+        # Ensure any remaining global keyboard hooks are removed
         try:
-            if hasattr(keyboard, 'unhook_all_hotkeys'):
-                keyboard.unhook_all_hotkeys()
-                logger.debug("keyboard.unhook_all_hotkeys() called")
-            elif hasattr(keyboard, 'unhook_all'):
-                keyboard.unhook_all()
-                logger.debug("keyboard.unhook_all() called")
+            unhook_func = getattr(keyboard, 'unhook_all_hotkeys', None) or getattr(keyboard, 'unhook_all', None)
+            if unhook_func:
+                unhook_func()
+                logger.debug(f"{unhook_func.__name__}() called")
         except Exception as e:
             logger.debug(f"Error while unhooking keyboard listeners: {e}")
     
@@ -218,7 +217,4 @@ class VolumeOverlayApp:
             except Exception:
                 pass
         
-        try:
-            QApplication.quit()
-        except Exception:
-            sys.exit(0)
+        QApplication.quit() if QApplication.instance() else sys.exit(0)

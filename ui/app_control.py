@@ -119,8 +119,6 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         """Handle volume text box change"""
         self.handle_volume_text_change()
     
-
-    
     def apply_styles(self):
         """Reapply all styles to reflect color changes"""
         # Reapply frame background

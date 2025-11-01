@@ -37,11 +37,12 @@ class BaseVolumeControl(QWidget):
     
     def handle_mute_toggle(self, get_mute_callback: Callable[[], bool], set_mute_callback: Callable[[bool], bool]) -> None:
         """Handle mute button click with common logic"""
-        if not self.slider or not self.volume_text:
+        if not (self.slider and self.volume_text):
             return
         
         try:
-            if set_mute_callback(new_mute := not get_mute_callback()):
+            new_mute = not get_mute_callback()
+            if set_mute_callback(new_mute):
                 self.is_muted = new_mute
                 self.update_mute_icon(new_mute)
         except Exception as e:
@@ -62,12 +63,14 @@ class BaseVolumeControl(QWidget):
     
     def wheelEvent(self, event) -> None:
         """Handle mouse wheel events for volume adjustment"""
-        if self._is_hovered:
-            new_volume = max(0, min(100, self.slider.value() + (5 if event.angleDelta().y() > 0 else -5)))
-            self.slider.setValue(new_volume)
-            event.accept()
-        else:
+        if not self._is_hovered:
             event.ignore()
+            return
+        
+        delta = 5 if event.angleDelta().y() > 0 else -5
+        new_volume = max(0, min(100, self.slider.value() + delta))
+        self.slider.setValue(new_volume)
+        event.accept()
     
     def enterEvent(self, event) -> None:
         """Handle mouse enter event"""

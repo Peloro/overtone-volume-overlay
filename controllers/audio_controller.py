@@ -84,8 +84,7 @@ class AudioController:
     
     def _get_file_description(self, exe_path: str) -> Optional[str]:
         """Get the file description from executable metadata"""
-        cached = self._file_desc_cache.get(exe_path)
-        if cached:
+        if cached := self._file_desc_cache.get(exe_path):
             return cached
         try:
             language, codepage = win32api.GetFileVersionInfo(exe_path, '\\VarFileInfo\\Translation')[0]
@@ -215,15 +214,14 @@ class AudioController:
     
     def _normalize_pids(self, pids):
         """Convert single PID to list"""
-        return [pids] if isinstance(pids, int) else pids
+        return pids if isinstance(pids, list) else [pids]
     
     def set_application_volume(self, pids, volume: float) -> bool:
         """Set volume for a specific application by PID(s)"""
         try:
-            success = any(session.SimpleAudioVolume.SetMasterVolume(volume, None) or True 
-                         for pid in self._normalize_pids(pids) 
-                         if (session := self._get_or_refresh_session(pid)))
-            return success
+            return any((session.SimpleAudioVolume.SetMasterVolume(volume, None), True)[1]
+                      for pid in self._normalize_pids(pids) 
+                      if (session := self._get_or_refresh_session(pid)))
         except Exception as e:
             logger.error(f"Error setting volume: {e}")
             return False
@@ -241,19 +239,19 @@ class AudioController:
     def set_application_mute(self, pids, mute: bool) -> bool:
         """Mute or unmute a specific application by PID(s)"""
         try:
-            success = any(session.SimpleAudioVolume.SetMute(mute, None) or True 
-                         for pid in self._normalize_pids(pids) 
-                         if (session := self._get_or_refresh_session(pid)))
-            return success
+            return any((session.SimpleAudioVolume.SetMute(mute, None), True)[1]
+                      for pid in self._normalize_pids(pids) 
+                      if (session := self._get_or_refresh_session(pid)))
         except Exception as e:
             logger.error(f"Error setting mute: {e}")
             return False
     
     def cleanup(self) -> None:
         """Clean up resources"""
-        for cache in (self._display_name_cache, self._file_desc_cache, self._pid_to_session, self._name_timestamps):
-            cache.clear()
-        
+        self._display_name_cache.clear()
+        self._file_desc_cache.clear()
+        self._pid_to_session.clear()
+        self._name_timestamps.clear()
         self.master_volume = None
 
         try:

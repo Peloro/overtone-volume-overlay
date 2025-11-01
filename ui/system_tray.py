@@ -45,26 +45,24 @@ class SystemTrayIcon(QSystemTrayIcon):
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         assets_dir = os.path.join(base_dir, 'assets')
         
-        icon_files = ['icon2_black.ico', 'icon2.png'] if sys.platform.startswith('win') else ['icon2.png', 'icon2_black.ico']
+        is_windows = sys.platform.startswith('win')
+        icon_files = ['icon2_black.ico', 'icon2.png'] if is_windows else ['icon2.png', 'icon2_black.ico']
 
         for icon_file in icon_files:
             icon_path = os.path.join(assets_dir, icon_file)
             
-            # Skip if file doesn't exist
             if not os.path.exists(icon_path):
                 continue
 
             # Try ICO on Windows
-            if icon_file.endswith('.ico') and sys.platform.startswith('win'):
-                icon = QIcon(icon_path)
-                if not icon.isNull():
+            if icon_file.endswith('.ico') and is_windows:
+                if not (icon := QIcon(icon_path)).isNull():
                     logger.info(f"Loaded tray icon from ICO: {icon_path}")
                     return icon
                 continue
 
             # Try PNG with alpha channel
-            original = QPixmap(icon_path)
-            if original.isNull():
+            if (original := QPixmap(icon_path)).isNull():
                 continue
             
             if icon_file.endswith('.png') and not original.hasAlphaChannel():

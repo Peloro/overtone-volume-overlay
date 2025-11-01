@@ -14,18 +14,16 @@ class SettingsDialog(QDialog):
     def __init__(self, app) -> None:
         super().__init__()
         self.app = app
+        self.has_unsaved_changes = False
         self.init_ui()
     
     def init_ui(self):
         """Initialize the settings dialog UI"""
+        from utils import set_window_icon
         self.setWindowTitle("Settings")
         self.setWindowFlags(Qt.Window | Qt.WindowStaysOnTopHint)
         self.setMinimumWidth(450)
-        
-        # Set window icon (use black version for dark-themed dialog)
-        icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets', 'icon2_black.ico')
-        if os.path.exists(icon_path):
-            self.setWindowIcon(QIcon(icon_path))
+        set_window_icon(self)
         
         layout = QVBoxLayout()
         
@@ -39,6 +37,10 @@ class SettingsDialog(QDialog):
         # Colors tab
         colors_tab = self.create_colors_tab()
         tab_widget.addTab(colors_tab, "Colors")
+        
+        # Profiles tab
+        profiles_tab = self.create_profiles_tab()
+        tab_widget.addTab(profiles_tab, "Profiles")
         
         # About tab
         about_tab = self.create_about_tab()
@@ -158,11 +160,6 @@ class SettingsDialog(QDialog):
         """Create the colors customization tab content"""
         colors_widget = QVBoxLayout()
         
-        # Info label
-        info_label = QLabel("Customize the overlay colors to match your preference")
-        info_label.setStyleSheet("color: #aaa; font-size: 11px; font-style: italic; padding: 5px;")
-        colors_widget.addWidget(info_label)
-        
         # Background colors group
         bg_group = QGroupBox("Background Colors")
         bg_layout = QFormLayout()
@@ -267,45 +264,23 @@ class SettingsDialog(QDialog):
     
     def _update_color_button(self, button: QPushButton, color: str):
         """Update button appearance to show the color"""
-        # We'll display colors to the user using an rgba tuple inside parentheses
-        # e.g. "(30, 30, 30, 255)" — no 'rgb' or 'rgba' prefix
         try:
-            if isinstance(color, str) and color.startswith("rgba"):
-                # Extract RGBA values from rgba string; replace {alpha} with 255 for display
+            if color.startswith("rgba"):
                 color_str = color.replace("rgba(", "").replace(")", "").replace("{alpha}", "255")
-                parts = [int(x.strip()) for x in color_str.split(",")]
-                r, g, b, a = parts[0], parts[1], parts[2], parts[3] if len(parts) > 3 else 255
+                r, g, b, a = [int(x.strip()) for x in color_str.split(",")][:4]
+                a = a if len(color_str.split(",")) > 3 else 255
                 display_text = f"({r}, {g}, {b}, {a})"
                 bg_css = f"rgba({r}, {g}, {b}, {a})"
             else:
-                # Assume hex or other color format; convert to QColor then to rgba for display
                 q = QColor(color)
                 r, g, b, a = q.red(), q.green(), q.blue(), q.alpha()
                 display_text = f"({r}, {g}, {b}, {a})"
-                bg_css = q.name()  # keep hex in stylesheet for simplicity
+                bg_css = q.name()
 
-            # Apply stylesheet: use bg_css for background (bg_css may be hex or rgba)
-            # Ensure readable text color for hex backgrounds
-            text_color = 'white'
-            button.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {bg_css};
-                    color: {text_color};
-                    border: 2px solid #666;
-                    border-radius: 3px;
-                }}
-            """)
+            button.setStyleSheet(f"QPushButton {{ background-color: {bg_css}; color: white; border: 2px solid #666; border-radius: 3px; }}")
             button.setText(display_text)
         except Exception:
-            # Fallback: show raw color string if parsing fails
-            button.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {color};
-                    color: white;
-                    border: 2px solid #666;
-                    border-radius: 3px;
-                }}
-            """)
+            button.setStyleSheet(f"QPushButton {{ background-color: {color}; color: white; border: 2px solid #666; border-radius: 3px; }}")
             button.setText(str(color))
     
     def _pick_color(self, setting_key: str, button: QPushButton, title: str):
@@ -324,6 +299,7 @@ class SettingsDialog(QDialog):
         color = QColorDialog.getColor(initial_color, self, f"Choose {title}")
         
         if color.isValid():
+            self.mark_as_changed()
             # Determine format based on current setting
             if current_color.startswith("rgba"):
                 new_color = f"rgba({color.red()}, {color.green()}, {color.blue()}, {{alpha}})" if "{alpha}" in current_color else f"rgba({color.red()}, {color.green()}, {color.blue()}, 255)"
@@ -377,6 +353,294 @@ class SettingsDialog(QDialog):
             # Refresh all app controls
             if hasattr(self.app.overlay, 'refresh_applications'):
                 self.app.overlay.refresh_applications()
+    
+    def create_profiles_tab(self):
+        """Create the profiles management tab content"""
+        from PyQt5.QtWidgets import QListWidget, QMessageBox, QInputDialog
+        
+        profiles_widget = QVBoxLayout()
+        
+        # Active profile display
+        active_profile_group = QGroupBox("Active Profile")
+        active_profile_layout = QVBoxLayout()
+        
+        self.active_profile_label = QLabel()
+        self.active_profile_label.setStyleSheet("color: #42a5f5; font-size: 14px; padding: 5px;")
+        active_profile_layout.addWidget(self.active_profile_label)
+        
+        active_profile_group.setLayout(active_profile_layout)
+        profiles_widget.addWidget(active_profile_group)
+        
+        # Profile list group
+        profile_list_group = QGroupBox("Available Profiles")
+        profile_list_layout = QVBoxLayout()
+        
+        self.profile_list = QListWidget()
+        self.profile_list.setStyleSheet("""
+            QListWidget {
+                background-color: #424242;
+                border: 1px solid #666;
+                border-radius: 3px;
+                color: white;
+                padding: 5px;
+            }
+            QListWidget::item {
+                padding: 8px;
+                border-radius: 3px;
+            }
+            QListWidget::item:selected {
+                background-color: #1e88e5;
+            }
+            QListWidget::item:hover {
+                background-color: #555;
+            }
+        """)
+        profile_list_layout.addWidget(self.profile_list)
+        profile_list_group.setLayout(profile_list_layout)
+        profiles_widget.addWidget(profile_list_group)
+        
+        # Profile actions - grouped by color
+        actions_layout = QHBoxLayout()
+        
+        # Blue buttons (primary actions)
+        switch_profile_btn = QPushButton("Switch to Selected")
+        switch_profile_btn.clicked.connect(self.on_switch_profile)
+        switch_profile_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #1e88e5;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                padding: 8px 15px;
+            }
+            QPushButton:hover {
+                background-color: #42a5f5;
+            }
+        """)
+        actions_layout.addWidget(switch_profile_btn)
+        
+        save_to_profile_btn = QPushButton("Save to Active Profile")
+        save_to_profile_btn.clicked.connect(self.on_save_to_active_profile)
+        save_to_profile_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #1e88e5;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                padding: 8px 15px;
+            }
+            QPushButton:hover {
+                background-color: #42a5f5;
+            }
+        """)
+        actions_layout.addWidget(save_to_profile_btn)
+        
+        # Regular buttons
+        new_profile_btn = QPushButton("New Profile")
+        new_profile_btn.clicked.connect(self.on_new_profile)
+        actions_layout.addWidget(new_profile_btn)
+        
+        rename_profile_btn = QPushButton("Rename")
+        rename_profile_btn.clicked.connect(self.on_rename_profile)
+        actions_layout.addWidget(rename_profile_btn)
+        
+        # Red button (destructive action)
+        delete_profile_btn = QPushButton("Delete")
+        delete_profile_btn.clicked.connect(self.on_delete_profile)
+        delete_profile_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #d32f2f;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                padding: 8px 15px;
+            }
+            QPushButton:hover {
+                background-color: #f44336;
+            }
+        """)
+        actions_layout.addWidget(delete_profile_btn)
+        
+        profiles_widget.addLayout(actions_layout)
+        
+        # Populate the profile list
+        self.refresh_profile_list()
+        
+        container = QWidget()
+        container.setLayout(profiles_widget)
+        return container
+    
+    def refresh_profile_list(self):
+        """Refresh the list of profiles"""
+        self.profile_list.clear()
+        active_profile = self.app.settings_manager.get_active_profile_name()
+        
+        for profile_name in self.app.settings_manager.get_profile_names():
+            item_text = profile_name
+            if profile_name == active_profile:
+                item_text += " (Active)"
+            if self.app.settings_manager.is_default_profile(profile_name):
+                item_text += " [Default]"
+            self.profile_list.addItem(item_text)
+        
+        # Update active profile label with asterisk if there are unsaved changes
+        asterisk = " *" if self.has_unsaved_changes else ""
+        self.active_profile_label.setText(f"{active_profile}{asterisk}")
+    
+    def mark_as_changed(self):
+        """Mark that the profile has unsaved changes"""
+        if not self.has_unsaved_changes:
+            self.has_unsaved_changes = True
+            self.refresh_profile_list()
+    
+    def on_new_profile(self):
+        """Create a new profile"""
+        from PyQt5.QtWidgets import QInputDialog, QMessageBox
+        
+        name, ok = QInputDialog.getText(
+            self, "New Profile", "Enter profile name:",
+            text=""
+        )
+        
+        if ok and name:
+            name = name.strip()
+            if self.app.settings_manager.create_profile(name, base_on_current=True):
+                self.app.settings_manager.switch_profile(name)
+                self.refresh_profile_list()
+                self.refresh_overlay_after_profile_switch()
+    
+    def on_rename_profile(self):
+        """Rename the selected profile"""
+        from PyQt5.QtWidgets import QInputDialog, QMessageBox
+        
+        selected_items = self.profile_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a profile to rename.")
+            return
+        
+        # Extract the actual profile name (remove markers like "(Active)" and "[Default]")
+        item_text = selected_items[0].text()
+        old_name = item_text.split(" (")[0].split(" [")[0]
+        
+        if self.app.settings_manager.is_default_profile(old_name):
+            QMessageBox.warning(
+                self, "Cannot Rename",
+                "The default profile cannot be renamed."
+            )
+            return
+        
+        new_name, ok = QInputDialog.getText(
+            self, "Rename Profile", "Enter new profile name:",
+            text=old_name
+        )
+        
+        if ok and new_name:
+            new_name = new_name.strip()
+            if self.app.settings_manager.rename_profile(old_name, new_name):
+                self.refresh_profile_list()
+    
+    def on_delete_profile(self):
+        """Delete the selected profile"""
+        from PyQt5.QtWidgets import QMessageBox
+        
+        selected_items = self.profile_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a profile to delete.")
+            return
+        
+        # Extract the actual profile name
+        item_text = selected_items[0].text()
+        profile_name = item_text.split(" (")[0].split(" [")[0]
+        
+        if self.app.settings_manager.is_default_profile(profile_name):
+            QMessageBox.warning(
+                self, "Cannot Delete",
+                "The default profile cannot be deleted."
+            )
+            return
+        
+        reply = QMessageBox.question(
+            self, "Confirm Delete",
+            f"Are you sure you want to delete the profile '{profile_name}'?\n\n"
+            "This action cannot be undone.",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            if self.app.settings_manager.delete_profile(profile_name):
+                self.refresh_profile_list()
+                if profile_name == self.app.settings_manager.get_active_profile_name():
+                    self.refresh_overlay_after_profile_switch()
+    
+    def on_switch_profile(self):
+        """Switch to the selected profile"""
+        from PyQt5.QtWidgets import QMessageBox
+        
+        selected_items = self.profile_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a profile to switch to.")
+            return
+        
+        # Extract the actual profile name
+        item_text = selected_items[0].text()
+        profile_name = item_text.split(" (")[0].split(" [")[0]
+        
+        # Allow re-selecting the same profile to revert unsaved changes
+        if self.app.settings_manager.switch_profile(profile_name):
+            self.has_unsaved_changes = False
+            self.refresh_profile_list()
+            self.refresh_overlay_after_profile_switch()
+    
+    def on_save_to_active_profile(self):
+        """Save current settings to the active profile"""
+        from PyQt5.QtWidgets import QMessageBox
+        
+        active_profile = self.app.settings_manager.get_active_profile_name()
+        
+        reply = QMessageBox.question(
+            self, "Confirm Save",
+            f"Save current settings to profile '{active_profile}'?\n\n"
+            "This will overwrite the saved settings in this profile.",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            self.app.settings_manager.save_to_profile(active_profile)
+            self.has_unsaved_changes = False
+            self.refresh_profile_list()
+    
+    def refresh_overlay_after_profile_switch(self):
+        """Refresh the overlay after switching profiles"""
+        # Update all UI elements to reflect the new profile settings
+        self.width_spin.setValue(self.app.settings_manager.overlay_width)
+        self.height_spin.setValue(self.app.settings_manager.overlay_height)
+        self.opacity_spin.setValue(self.app.settings_manager.overlay_opacity)
+        self.hotkey_open_edit.setText(self.app.settings_manager.hotkey_open)
+        self.hotkey_settings_edit.setText(self.app.settings_manager.hotkey_settings)
+        self.hotkey_quit_edit.setText(self.app.settings_manager.hotkey_quit)
+        self.confirm_quit_checkbox.setChecked(self.app.settings_manager.confirm_on_quit)
+        self.show_system_volume_checkbox.setChecked(self.app.settings_manager.show_system_volume)
+        self.always_show_filter_checkbox.setChecked(self.app.settings_manager.always_show_filter)
+        
+        # Update color buttons
+        self._update_color_button(self.color_title_bar_btn, self.app.settings_manager.color_title_bar_bg)
+        self._update_color_button(self.color_master_frame_btn, self.app.settings_manager.color_master_frame_bg)
+        self._update_color_button(self.color_container_btn, self.app.settings_manager.color_container_bg)
+        self._update_color_button(self.color_app_control_btn, self.app.settings_manager.color_app_control_bg)
+        self._update_color_button(self.color_master_slider_btn, self.app.settings_manager.color_master_slider_handle)
+        self._update_color_button(self.color_app_slider_btn, self.app.settings_manager.color_app_slider_handle)
+        self._update_color_button(self.color_primary_button_btn, self.app.settings_manager.color_primary_button_bg)
+        self._update_color_button(self.color_close_button_btn, self.app.settings_manager.color_close_button_bg)
+        
+        # Refresh overlay
+        self.app.overlay.resize(self.app.settings_manager.overlay_width, self.app.settings_manager.overlay_height)
+        self.app.overlay.update_background_opacity()
+        self.app.overlay.update_system_volume_visibility()
+        self.app.overlay.update_filter_display_mode()
+        self.refresh_overlay_colors()
+        
+        # Reapply hotkeys
+        self.app.setup_hotkeys()
     
     def create_about_tab(self):
         """Create the about tab content"""
@@ -502,41 +766,48 @@ class SettingsDialog(QDialog):
     
     def on_width_changed(self, value: int) -> None:
         """Handle width change in real-time"""
+        self.mark_as_changed()
         self.app.settings_manager.set("overlay_width", value)
         self.app.overlay.resize(value, self.app.settings_manager.overlay_height)
-        self.app.settings_manager.save_settings()  # Debounced automatically
+        self.app.settings_manager.save_settings()
     
     def on_height_changed(self, value: int) -> None:
         """Handle height change in real-time"""
+        self.mark_as_changed()
         self.app.settings_manager.set("overlay_height", value)
         self.app.overlay.resize(self.app.settings_manager.overlay_width, value)
-        self.app.settings_manager.save_settings()  # Debounced automatically
+        self.app.settings_manager.save_settings()
     
     def on_opacity_changed(self, value: float) -> None:
         """Handle opacity change in real-time"""
+        self.mark_as_changed()
         self.app.settings_manager.set("overlay_opacity", value)
         self.app.overlay.update_background_opacity()
-        self.app.settings_manager.save_settings()  # Debounced automatically
+        self.app.settings_manager.save_settings()
     
     def on_confirm_quit_changed(self, state: int) -> None:
         """Handle confirm quit checkbox change"""
+        self.mark_as_changed()
         self.app.settings_manager.set("confirm_on_quit", bool(state))
-        self.app.settings_manager.save_settings(debounce=False)  # Immediate for checkbox
+        self.app.settings_manager.save_settings(debounce=False)
     
     def on_show_system_volume_changed(self, state: int) -> None:
         """Handle show system volume checkbox change"""
+        self.mark_as_changed()
         self.app.settings_manager.set("show_system_volume", bool(state))
         self.app.overlay.update_system_volume_visibility()
-        self.app.settings_manager.save_settings(debounce=False)  # Immediate for checkbox
+        self.app.settings_manager.save_settings(debounce=False)
     
     def on_always_show_filter_changed(self, state: int) -> None:
         """Handle always show filter checkbox change"""
+        self.mark_as_changed()
         self.app.settings_manager.set("always_show_filter", bool(state))
         self.app.overlay.update_filter_display_mode()
-        self.app.settings_manager.save_settings(debounce=False)  # Immediate for checkbox
+        self.app.settings_manager.save_settings(debounce=False)
     
     def on_hotkey_changed(self) -> None:
         """Handle hotkey change - save and reapply immediately"""
+        self.mark_as_changed()
         self.app.settings_manager.update({
             "hotkey_open": self.hotkey_open_edit.text(),
             "hotkey_settings": self.hotkey_settings_edit.text(),

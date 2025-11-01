@@ -16,14 +16,7 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         QFrame.__init__(self)
         BaseVolumeControl.__init__(self)
         self.audio_controller = audio_controller
-        self._is_hovered = False
-        
-        # Fetch initial master volume for initializing UI state
-        initial_master_volume = self.audio_controller.get_master_volume()
-        initial_master_mute = self.audio_controller.get_master_mute()
-        current_master_vol = int(initial_master_volume * 100)
-        self.init_volume_state(current_master_vol, initial_master_mute)
-        
+        self.init_volume_state(int(audio_controller.get_master_volume() * 100), audio_controller.get_master_mute())
         self.init_ui()
     
     def init_ui(self):
@@ -94,35 +87,7 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         """Handle master volume text box change"""
         self.handle_volume_text_change()
     
-    def wheelEvent(self, event) -> None:
-        """Handle mouse wheel events for volume adjustment"""
-        if self._is_hovered:
-            # Get the scroll delta (positive = scroll up, negative = scroll down)
-            delta = event.angleDelta().y()
-            
-            # Each scroll "notch" changes volume by 5%
-            volume_change = 5 if delta > 0 else -5
-            
-            # Calculate new volume
-            current_volume = self.slider.value()
-            new_volume = max(0, min(100, current_volume + volume_change))
-            
-            # Update slider and apply change
-            self.slider.setValue(new_volume)
-            
-            event.accept()
-        else:
-            event.ignore()
-    
-    def enterEvent(self, event) -> None:
-        """Handle mouse enter event"""
-        self._is_hovered = True
-        super().enterEvent(event)
-    
-    def leaveEvent(self, event) -> None:
-        """Handle mouse leave event"""
-        self._is_hovered = False
-        super().leaveEvent(event)
+
     
     def apply_styles(self):
         """Reapply all styles to reflect color changes"""

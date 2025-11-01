@@ -3,15 +3,12 @@ Overtone Application
 A system tray application for controlling volume of individual applications
 """
 import sys
-import os
 import traceback
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon
-
 from utils.logger import setup_logger
+from utils import set_window_icon
 
-# Setup logging
 logger = setup_logger("overtone", "overtone.log")
 
 def main() -> int:
@@ -27,7 +24,6 @@ def main() -> int:
     except Exception as e:
         logger.critical(f"Fatal error during initialization: {e}", exc_info=True)
         
-        # Show error dialog to user
         try:
             error_dialog = QMessageBox()
             error_dialog.setIcon(QMessageBox.Critical)
@@ -36,15 +32,10 @@ def main() -> int:
             error_dialog.setInformativeText(str(e))
             error_dialog.setDetailedText(traceback.format_exc())
             error_dialog.setWindowFlags(Qt.WindowStaysOnTopHint)
-            
-            # Set window icon (use .ico for better Windows compatibility)
-            icon_path = os.path.join(os.path.dirname(__file__), 'assets', 'icon2_black.ico')
-            if os.path.exists(icon_path):
-                error_dialog.setWindowIcon(QIcon(icon_path))
-            
+            set_window_icon(error_dialog)
             error_dialog.exec_()
         except Exception:
-            pass  # If even the error dialog fails, just print to console
+            pass
         
         return 1
 

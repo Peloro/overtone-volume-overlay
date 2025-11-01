@@ -1,0 +1,25 @@
+{
+    "profiles": {
+        "Default": {
+            "overlay_width": 300,
+            "overlay_height": 350,
+            "overlay_opacity": 0.9,
+            "hotkey_open": "ctrl+/",
+            "hotkey_settings": "ctrl+shift+s",
+            "hotkey_quit": "ctrl+q",
+            "confirm_on_quit": true,
+            "show_system_volume": true,
+            "always_show_filter": false,
+            "color_main_background": "rgba(30, 30, 30, {alpha})",
+            "color_title_bar_bg": "rgba(43, 43, 43, 255)",
+            "color_master_frame_bg": "rgba(30, 58, 95, 255)",
+            "color_container_bg": "rgba(43, 43, 43, 255)",
+            "color_app_control_bg": "rgba(50, 50, 50, 200)",
+            "color_master_slider_handle": "#4caf50",
+            "color_app_slider_handle": "#1e88e5",
+            "color_primary_button_bg": "#1e88e5",
+            "color_close_button_bg": "#d32f2f"
+        }
+    },
+    "active_profile": "Default"
+}

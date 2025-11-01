@@ -7,6 +7,7 @@ import os
 from typing import Dict, Any
 from PyQt5.QtCore import QTimer
 from .ui_constants import UIConstants, Hotkeys
+from .profiles_manager import ProfilesManager
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -21,6 +22,7 @@ class SettingsManager:
         self._default_settings = self._get_default_settings()
         self._save_timer: QTimer = None
         self._save_debounce_ms = 500  # Wait 500ms after last change before saving
+        self.profiles_manager = ProfilesManager()
         self.load_settings()
     
     def _setup_save_timer(self) -> None:
@@ -56,21 +58,15 @@ class SettingsManager:
         }
     
     def load_settings(self) -> None:
-        """Load settings from file or use defaults"""
+        """Load settings from active profile"""
+        # Load settings from the active profile
+        profile_settings = self.profiles_manager.get_active_profile_settings()
         self.settings = self._default_settings.copy()
+        self.settings.update(profile_settings)
         
-        if os.path.exists(self.settings_file):
-            try:
-                with open(self.settings_file, 'r') as f:
-                    self.settings.update(json.load(f))
-                logger.info(f"Settings loaded from {self.settings_file}")
-            except Exception as e:
-                logger.error(f"Error loading settings: {e}", exc_info=True)
-        else:
-            logger.info("No settings file found, using defaults")
+        logger.info(f"Settings loaded from profile '{self.profiles_manager.get_active_profile_name()}'")
         
         self._validate_settings()
-        self.save_settings(debounce=False)  # Initial save should be immediate
         self._setup_save_timer()
     
     def _do_save_settings(self) -> None:
@@ -169,75 +165,50 @@ class SettingsManager:
         self.settings = self._default_settings.copy()
         self.save_settings(debounce=False)  # Immediate save for explicit user action
     
-    @property
-    def overlay_width(self) -> int:
-        return self.settings["overlay_width"]
+    def __getattr__(self, name):
+        """Dynamic property access for settings"""
+        if name in self.settings:
+            return self.settings[name]
+        if name in self._default_settings:
+            return self._default_settings[name]
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
     
-    @property
-    def overlay_height(self) -> int:
-        return self.settings["overlay_height"]
+    # Profile management methods
+    def get_active_profile_name(self) -> str:
+        """Get the name of the active profile"""
+        return self.profiles_manager.get_active_profile_name()
     
-    @property
-    def overlay_opacity(self) -> float:
-        return self.settings["overlay_opacity"]
+    def get_profile_names(self) -> list:
+        """Get list of all profile names"""
+        return self.profiles_manager.get_profile_names()
     
-    @property
-    def hotkey_open(self) -> str:
-        return self.settings["hotkey_open"]
+    def switch_profile(self, profile_name: str) -> bool:
+        """Switch to a different profile and reload settings"""
+        if self.profiles_manager.switch_profile(profile_name):
+            self.load_settings()
+            return True
+        return False
     
-    @property
-    def hotkey_settings(self) -> str:
-        return self.settings["hotkey_settings"]
+    def create_profile(self, profile_name: str, base_on_current: bool = True) -> bool:
+        """Create a new profile"""
+        return self.profiles_manager.create_profile(profile_name, base_on_current)
     
-    @property
-    def hotkey_quit(self) -> str:
-        return self.settings["hotkey_quit"]
+    def delete_profile(self, profile_name: str) -> bool:
+        """Delete a profile"""
+        result = self.profiles_manager.delete_profile(profile_name)
+        if result and profile_name == self.profiles_manager.get_active_profile_name():
+            # If we deleted the active profile, reload settings
+            self.load_settings()
+        return result
     
-    @property
-    def confirm_on_quit(self) -> bool:
-        return self.settings.get("confirm_on_quit", True)
+    def rename_profile(self, old_name: str, new_name: str) -> bool:
+        """Rename a profile"""
+        return self.profiles_manager.rename_profile(old_name, new_name)
     
-    @property
-    def show_system_volume(self) -> bool:
-        return self.settings.get("show_system_volume", True)
+    def save_to_profile(self, profile_name: str) -> bool:
+        """Save current settings to a specific profile"""
+        return self.profiles_manager.save_current_settings_to_profile(profile_name, self.settings)
     
-    @property
-    def always_show_filter(self) -> bool:
-        return self.settings.get("always_show_filter", False)
-    
-    # Color properties
-    @property
-    def color_main_background(self) -> str:
-        return self.settings.get("color_main_background", "rgba(30, 30, 30, {alpha})")
-    
-    @property
-    def color_title_bar_bg(self) -> str:
-        return self.settings.get("color_title_bar_bg", "rgba(43, 43, 43, 255)")
-    
-    @property
-    def color_master_frame_bg(self) -> str:
-        return self.settings.get("color_master_frame_bg", "rgba(30, 58, 95, 255)")
-    
-    @property
-    def color_container_bg(self) -> str:
-        return self.settings.get("color_container_bg", "rgba(43, 43, 43, 255)")
-    
-    @property
-    def color_app_control_bg(self) -> str:
-        return self.settings.get("color_app_control_bg", "rgba(50, 50, 50, 200)")
-    
-    @property
-    def color_master_slider_handle(self) -> str:
-        return self.settings.get("color_master_slider_handle", "#4caf50")
-    
-    @property
-    def color_app_slider_handle(self) -> str:
-        return self.settings.get("color_app_slider_handle", "#1e88e5")
-    
-    @property
-    def color_primary_button_bg(self) -> str:
-        return self.settings.get("color_primary_button_bg", "#1e88e5")
-    
-    @property
-    def color_close_button_bg(self) -> str:
-        return self.settings.get("color_close_button_bg", "#d32f2f")
+    def is_default_profile(self, profile_name: str) -> bool:
+        """Check if a profile is the default profile"""
+        return self.profiles_manager.is_default_profile(profile_name)

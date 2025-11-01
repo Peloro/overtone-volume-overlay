@@ -1,6 +1,3 @@
-"""
-Hotkey Handler for thread-safe Qt signal emission
-"""
 from PyQt5.QtCore import QObject, pyqtSignal
 
 

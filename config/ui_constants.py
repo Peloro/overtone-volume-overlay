@@ -1,8 +1,3 @@
-"""
-UI Dimension and Timing Constants
-"""
-
-
 class UIConstants:
     """UI dimension and timing constants"""
     DEFAULT_OVERLAY_WIDTH = 300

@@ -1,6 +1,3 @@
-"""
-Reusable Stylesheet Templates
-"""
 from .ui_constants import UIConstants
 from .colors import Colors
 
@@ -57,93 +54,59 @@ class StyleSheets:
         """
     
     @staticmethod
-    def get_settings_button_stylesheet() -> str:
+    def _get_button_stylesheet(bg_color: str, hover_color: str, font_size: int = None, bold: bool = False) -> str:
+        """Helper to generate button stylesheet"""
+        font_size = font_size or UIConstants.BUTTON_FONT_SIZE
+        weight = "font-weight: bold;" if bold else ""
         return f"""
             QPushButton {{
-                background-color: {Colors.SETTINGS_BUTTON_BG};
-                color: {Colors.TEXT_WHITE};
-                border: none;
-                border-radius: {UIConstants.BUTTON_RADIUS}px;
-                font-size: {UIConstants.BUTTON_FONT_SIZE}px;
+                background-color: {bg_color}; color: {Colors.TEXT_WHITE};
+                border: none; border-radius: {UIConstants.BUTTON_RADIUS}px;
+                font-size: {font_size}px; {weight}
             }}
-            QPushButton:hover {{
-                background-color: {Colors.SETTINGS_BUTTON_HOVER};
-            }}
+            QPushButton:hover {{ background-color: {hover_color}; }}
         """
+    
+    @staticmethod
+    def get_settings_button_stylesheet() -> str:
+        return StyleSheets._get_button_stylesheet(Colors.SETTINGS_BUTTON_BG, Colors.SETTINGS_BUTTON_HOVER)
     
     @staticmethod
     def get_minimize_button_stylesheet() -> str:
-        return f"""
-            QPushButton {{
-                background-color: {Colors.MINIMIZE_BUTTON_BG};
-                color: {Colors.TEXT_WHITE};
-                border: none;
-                border-radius: {UIConstants.BUTTON_RADIUS}px;
-                font-size: {UIConstants.CLOSE_BUTTON_FONT_SIZE}px;
-                font-weight: bold;
-            }}
-            QPushButton:hover {{
-                background-color: {Colors.MINIMIZE_BUTTON_HOVER};
-            }}
-        """
+        return StyleSheets._get_button_stylesheet(Colors.MINIMIZE_BUTTON_BG, Colors.MINIMIZE_BUTTON_HOVER, 
+                                                   UIConstants.CLOSE_BUTTON_FONT_SIZE, True)
     
     @staticmethod
     def get_close_button_stylesheet() -> str:
+        return StyleSheets._get_button_stylesheet(Colors.CLOSE_BUTTON_BG, Colors.CLOSE_BUTTON_HOVER, 
+                                                   UIConstants.CLOSE_BUTTON_FONT_SIZE, True)
+    
+    @staticmethod
+    def _get_slider_stylesheet(handle_color: str, border_color: str, hover_color: str, 
+                               border_width: int = 1, margin: int = -4) -> str:
+        """Helper to generate slider stylesheet"""
         return f"""
-            QPushButton {{
-                background-color: {Colors.CLOSE_BUTTON_BG};
-                color: {Colors.TEXT_WHITE};
-                border: none;
-                border-radius: {UIConstants.BUTTON_RADIUS}px;
-                font-size: {UIConstants.CLOSE_BUTTON_FONT_SIZE}px;
-                font-weight: bold;
+            QSlider::groove:horizontal {{
+                border: 1px solid {Colors.SLIDER_GROOVE_BORDER};
+                height: 6px; background: {Colors.SLIDER_GROOVE_BG};
+                border-radius: {UIConstants.SLIDER_RADIUS}px;
             }}
-            QPushButton:hover {{
-                background-color: {Colors.CLOSE_BUTTON_HOVER};
+            QSlider::handle:horizontal {{
+                background: {handle_color}; border: {border_width}px solid {border_color};
+                width: 14px; margin: {margin}px 0; border-radius: {UIConstants.HANDLE_RADIUS}px;
             }}
+            QSlider::handle:horizontal:hover {{ background: {hover_color}; }}
         """
     
     @staticmethod
     def get_master_slider_stylesheet() -> str:
-        return f"""
-            QSlider::groove:horizontal {{
-                border: 1px solid {Colors.SLIDER_GROOVE_BORDER};
-                height: 6px;
-                background: {Colors.SLIDER_GROOVE_BG};
-                border-radius: {UIConstants.SLIDER_RADIUS}px;
-            }}
-            QSlider::handle:horizontal {{
-                background: {Colors.MASTER_SLIDER_HANDLE};
-                border: 2px solid {Colors.MASTER_SLIDER_HANDLE_BORDER};
-                width: 14px;
-                margin: -5px 0;
-                border-radius: {UIConstants.HANDLE_RADIUS}px;
-            }}
-            QSlider::handle:horizontal:hover {{
-                background: {Colors.MASTER_SLIDER_HANDLE_HOVER};
-            }}
-        """
+        return StyleSheets._get_slider_stylesheet(Colors.MASTER_SLIDER_HANDLE, Colors.MASTER_SLIDER_HANDLE_BORDER, 
+                                                   Colors.MASTER_SLIDER_HANDLE_HOVER, 2, -5)
     
     @staticmethod
     def get_app_slider_stylesheet() -> str:
-        return f"""
-            QSlider::groove:horizontal {{
-                border: 1px solid {Colors.SLIDER_GROOVE_BORDER};
-                height: 6px;
-                background: {Colors.SLIDER_GROOVE_BG};
-                border-radius: {UIConstants.SLIDER_RADIUS}px;
-            }}
-            QSlider::handle:horizontal {{
-                background: {Colors.APP_SLIDER_HANDLE};
-                border: 1px solid {Colors.APP_SLIDER_HANDLE_BORDER};
-                width: 14px;
-                margin: -4px 0;
-                border-radius: {UIConstants.HANDLE_RADIUS}px;
-            }}
-            QSlider::handle:horizontal:hover {{
-                background: {Colors.APP_SLIDER_HANDLE_HOVER};
-            }}
-        """
+        return StyleSheets._get_slider_stylesheet(Colors.APP_SLIDER_HANDLE, Colors.APP_SLIDER_HANDLE_BORDER, 
+                                                   Colors.APP_SLIDER_HANDLE_HOVER)
     
     @staticmethod
     def get_volume_text_stylesheet(border_color: str = None) -> str:

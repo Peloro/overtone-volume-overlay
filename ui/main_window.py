@@ -158,22 +158,24 @@ class VolumeOverlay(QWidget):
     
     def _create_pagination_controls(self) -> QFrame:
         """Create pagination controls frame"""
+        from utils import create_button
+        
         pagination_frame = QFrame()
         pagination_layout = QHBoxLayout(pagination_frame)
         
-        from utils import create_button
-        
-        self.previous_button = create_button("◀", self.previous_page, "", StyleSheets.get_pagination_button_stylesheet(), UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
+        style = StyleSheets.get_pagination_button_stylesheet()
+        self.previous_button = create_button("◀", self.previous_page, "", style, UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
         
         self.page_label = QLabel("1 / 1")
         self.page_label.setStyleSheet(StyleSheets.get_page_label_stylesheet())
         self.page_label.setAlignment(Qt.AlignCenter)
         
-        self.next_button = create_button("▶", self.next_page, "", StyleSheets.get_pagination_button_stylesheet(), UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
+        self.next_button = create_button("▶", self.next_page, "", style, UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
         
         pagination_layout.addStretch()
-        for widget in (self.previous_button, self.page_label, self.next_button):
-            pagination_layout.addWidget(widget)
+        pagination_layout.addWidget(self.previous_button)
+        pagination_layout.addWidget(self.page_label)
+        pagination_layout.addWidget(self.next_button)
         pagination_layout.addStretch()
         
         pagination_frame.setStyleSheet(StyleSheets.get_frame_stylesheet())
@@ -330,21 +332,15 @@ class VolumeOverlay(QWidget):
     
     def clear_all_controls(self) -> None:
         """Clear all app controls from layout"""
-        # Remove and delete all tracked controls
-        for name in list(self.app_controls.keys()):
-            widget = self.app_controls.pop(name, None)
-            if widget:
-                self.container_layout.removeWidget(widget)
-                widget.setParent(None)
-                widget.deleteLater()
+        for widget in list(self.app_controls.values()):
+            self.container_layout.removeWidget(widget)
+            widget.setParent(None)
+            widget.deleteLater()
+        self.app_controls.clear()
         
-        # Clean up any widgets except the stretch item
-        # The stretch is always the last item, so we keep count > 1 to preserve it
         while self.container_layout.count() > 1:
-            item = self.container_layout.takeAt(0)
-            if item:
-                widget = item.widget()
-                if widget:
+            if item := self.container_layout.takeAt(0):
+                if widget := item.widget():
                     widget.setParent(None)
                     widget.deleteLater()
     

@@ -1,7 +1,4 @@
-"""
-Application Information Constants
-"""
-
+"""Application Information Constants"""
 
 class AppInfo:
     """Application information constants"""
@@ -14,3 +11,4 @@ class AppInfo:
     REPO_URL = "https://github.com/Peloro/overtone-volume-overlay"
     LICENSE = "MIT License"
     YEAR = "2025"
+    ICON_FILE = "icon2_black.ico"

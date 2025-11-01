@@ -1,8 +1,3 @@
-"""
-Color Constants using RGBA values
-"""
-
-
 class ColorsMeta(type):
     """Metaclass to make color attributes dynamic"""
     def __getattribute__(cls, name):

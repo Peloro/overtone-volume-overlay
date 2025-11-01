@@ -177,6 +177,7 @@ class VolumeOverlayApp:
             self.quit_application()
             return
         
+        from utils import set_window_icon
         msg_box = QMessageBox()
         msg_box.setWindowTitle("Confirm Quit")
         msg_box.setText("Are you sure you want to quit Overtone?")
@@ -184,11 +185,7 @@ class VolumeOverlayApp:
         msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         msg_box.setDefaultButton(QMessageBox.No)
         msg_box.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.Dialog)
-        
-        # Set window icon (use .ico for better Windows compatibility)
-        icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets', 'icon2_black.ico')
-        if os.path.exists(icon_path):
-            msg_box.setWindowIcon(QIcon(icon_path))
+        set_window_icon(msg_box)
         msg_box.setStyleSheet("""
             QMessageBox { background-color: #2b2b2b; color: white; }
             QMessageBox QLabel { color: white; }
@@ -209,30 +206,19 @@ class VolumeOverlayApp:
         logger.info("Shutting down Overtone application")
         self.refresh_timer.stop()
         self._unregister_hotkeys()
+        
         if hasattr(self, 'audio_controller'):
             self.audio_controller.cleanup()
         
         for widget in (self.tray_icon, self.overlay, self.settings_dialog):
-            if hasattr(widget, 'hide'):
-                try:
-                    widget.hide()
-                except Exception:
-                    pass
-            if hasattr(widget, 'close'):
-                try:
-                    widget.close()
-                except Exception:
-                    pass
-            # schedule for deletion to ensure Qt can fully release native resources
             try:
-                if hasattr(widget, 'deleteLater'):
-                    widget.deleteLater()
+                widget.hide()
+                widget.close()
+                widget.deleteLater()
             except Exception:
                 pass
-        # Request the Qt event loop to exit cleanly instead of forcing immediate process termination.
+        
         try:
             QApplication.quit()
         except Exception:
-            # Fallback to immediate exit if quitting the Qt loop fails
-            import sys as _sys
-            _sys.exit(0)
+            sys.exit(0)

@@ -123,21 +123,15 @@ class AudioController:
     def _get_display_name(self, process_name: str, pid: int, process) -> str:
         """Get display name for a process, trying multiple methods"""
         now = time()
-        cached = self._display_name_cache.get(pid)
-        if cached and (now - self._name_timestamps.get(pid, 0)) < self._name_ttl_seconds:
+        if (cached := self._display_name_cache.get(pid)) and (now - self._name_timestamps.get(pid, 0)) < self._name_ttl_seconds:
             return cached
 
-        # Try window title first
+        # Try window title, then file description, finally process name
         display_name = self._get_window_title_by_pid(pid)
         
-        # If no window title, try file description
-        if not display_name:
-            exe_getter = getattr(process, 'exe', lambda: None)
-            exe_path = exe_getter()
-            if exe_path and os.path.exists(exe_path):
-                display_name = self._get_file_description(exe_path)
+        if not display_name and (exe_path := getattr(process, 'exe', lambda: None)()) and os.path.exists(exe_path):
+            display_name = self._get_file_description(exe_path)
         
-        # Fall back to process name
         if not display_name:
             display_name = process_name[:-4] if process_name.lower().endswith('.exe') else process_name
         
@@ -219,15 +213,16 @@ class AudioController:
                 return session
         return None
     
+    def _normalize_pids(self, pids):
+        """Convert single PID to list"""
+        return [pids] if isinstance(pids, int) else pids
+    
     def set_application_volume(self, pids, volume: float) -> bool:
         """Set volume for a specific application by PID(s)"""
-        pids = [pids] if isinstance(pids, int) else pids
         try:
-            success = False
-            for pid in pids:
-                if session := self._get_or_refresh_session(pid):
-                    session.SimpleAudioVolume.SetMasterVolume(volume, None)
-                    success = True
+            success = any(session.SimpleAudioVolume.SetMasterVolume(volume, None) or True 
+                         for pid in self._normalize_pids(pids) 
+                         if (session := self._get_or_refresh_session(pid)))
             return success
         except Exception as e:
             logger.error(f"Error setting volume: {e}")
@@ -235,26 +230,20 @@ class AudioController:
     
     def get_application_mute(self, pids) -> bool:
         """Get mute state for a specific application by PID(s) - True if ANY are muted"""
-        pids = [pids] if isinstance(pids, int) else pids
         try:
-            for pid in pids:
-                session = self._get_or_refresh_session(pid)
-                if session and session.SimpleAudioVolume.GetMute():
-                    return True
-            return False
+            return any(session.SimpleAudioVolume.GetMute() 
+                      for pid in self._normalize_pids(pids) 
+                      if (session := self._get_or_refresh_session(pid)))
         except Exception as e:
             logger.error(f"Error getting mute state: {e}")
             return False
     
     def set_application_mute(self, pids, mute: bool) -> bool:
         """Mute or unmute a specific application by PID(s)"""
-        pids = [pids] if isinstance(pids, int) else pids
         try:
-            success = False
-            for pid in pids:
-                if session := self._get_or_refresh_session(pid):
-                    session.SimpleAudioVolume.SetMute(mute, None)
-                    success = True
+            success = any(session.SimpleAudioVolume.SetMute(mute, None) or True 
+                         for pid in self._normalize_pids(pids) 
+                         if (session := self._get_or_refresh_session(pid)))
             return success
         except Exception as e:
             logger.error(f"Error setting mute: {e}")
@@ -262,18 +251,12 @@ class AudioController:
     
     def cleanup(self) -> None:
         """Clean up resources"""
-        # Clear caches
-        self._display_name_cache.clear()
-        self._file_desc_cache.clear()
-        self._pid_to_session.clear()
-        self._name_timestamps.clear()
+        for cache in (self._display_name_cache, self._file_desc_cache, self._pid_to_session, self._name_timestamps):
+            cache.clear()
         
-        # Just set to None - comtypes will handle cleanup automatically
         self.master_volume = None
 
-        # Try to uninitialize COM if available to ensure native resources are released.
         try:
-            # Import locally to avoid a hard dependency in environments without comtypes
             import comtypes
             if hasattr(comtypes, 'CoUninitialize'):
                 comtypes.CoUninitialize()

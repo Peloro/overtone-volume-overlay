@@ -1,47 +1,27 @@
-"""
-UI Utilities for common widget operations
-"""
+"""UI Utilities for common widget operations"""
+import os
 from typing import Callable
 from PyQt5.QtWidgets import QPushButton
-from config import UIConstants
+from PyQt5.QtGui import QIcon
+from config import UIConstants, AppInfo
 
 
-def create_button(
-    text: str,
-    callback: Callable,
-    tooltip: str = "",
-    stylesheet: str = "",
-    fixed_width: int = None,
-    fixed_height: int = None
-) -> QPushButton:
-    """
-    Create a QPushButton with common properties
-    
-    Args:
-        text: Button text
-        callback: Click handler function
-        tooltip: Tooltip text
-        stylesheet: Qt stylesheet string
-        fixed_width: Fixed width in pixels (None for default)
-        fixed_height: Fixed height in pixels (None for default)
-    
-    Returns:
-        Configured QPushButton
-    """
+def create_button(text: str, callback: Callable, tooltip: str = "", stylesheet: str = "",
+                  fixed_width: int = None, fixed_height: int = None) -> QPushButton:
+    """Create a QPushButton with common properties"""
     button = QPushButton(text)
     
-    if fixed_width is not None and fixed_height is not None:
+    if fixed_width and fixed_height:
         button.setFixedSize(fixed_width, fixed_height)
-    elif fixed_width is not None:
+    elif fixed_width:
         button.setFixedWidth(fixed_width)
-    elif fixed_height is not None:
+    elif fixed_height:
         button.setFixedHeight(fixed_height)
     
     if stylesheet:
         button.setStyleSheet(stylesheet)
-    
-    button.clicked.connect(callback)
-    
+    if callback:
+        button.clicked.connect(callback)
     if tooltip:
         button.setToolTip(tooltip)
     
@@ -49,23 +29,17 @@ def create_button(
 
 
 def create_standard_button(text: str, callback: Callable, tooltip: str, stylesheet: str) -> QPushButton:
-    """
-    Create a standard button with the default size
-    
-    Args:
-        text: Button text
-        callback: Click handler function
-        tooltip: Tooltip text
-        stylesheet: Qt stylesheet string
-    
-    Returns:
-        Configured QPushButton with standard size
-    """
-    return create_button(
-        text=text,
-        callback=callback,
-        tooltip=tooltip,
-        stylesheet=stylesheet,
-        fixed_width=UIConstants.BUTTON_SIZE,
-        fixed_height=UIConstants.BUTTON_SIZE
-    )
+    """Create a standard button with the default size"""
+    return create_button(text, callback, tooltip, stylesheet, UIConstants.BUTTON_SIZE, UIConstants.BUTTON_SIZE)
+
+
+def get_icon_path() -> str:
+    """Get the path to the application icon"""
+    return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets', AppInfo.ICON_FILE)
+
+
+def set_window_icon(widget) -> None:
+    """Set window icon for a widget if icon exists"""
+    icon_path = get_icon_path()
+    if os.path.exists(icon_path):
+        widget.setWindowIcon(QIcon(icon_path))

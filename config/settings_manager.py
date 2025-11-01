@@ -16,8 +16,7 @@ logger = get_logger(__name__)
 class SettingsManager:
     """Manages application settings with file persistence"""
     
-    def __init__(self, settings_file: str = "settings.json"):
-        self.settings_file = settings_file
+    def __init__(self):
         self.settings: Dict[str, Any] = {}
         self._default_settings = self._get_default_settings()
         self._save_timer: QTimer = None
@@ -70,19 +69,12 @@ class SettingsManager:
         self._setup_save_timer()
     
     def _do_save_settings(self) -> None:
-        """Actually write settings to disk"""
+        """Actually write settings to the active profile"""
         try:
-            # Write to temp file first, then rename for atomic operation
-            temp_file = self.settings_file + '.tmp'
-            with open(temp_file, 'w') as f:
-                json.dump(self.settings, f, indent=4)
-            
-            # Atomic rename (on Windows, need to remove target first)
-            if os.path.exists(self.settings_file):
-                os.remove(self.settings_file)
-            os.rename(temp_file, self.settings_file)
-            
-            logger.debug(f"Settings saved to {self.settings_file}")
+            # Save current settings to the active profile
+            active_profile = self.profiles_manager.get_active_profile_name()
+            self.profiles_manager.save_current_settings_to_profile(active_profile, self.settings)
+            logger.debug(f"Settings saved to profile '{active_profile}'")
         except Exception as e:
             logger.error(f"Error saving settings: {e}", exc_info=True)
     

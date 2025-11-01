@@ -56,18 +56,18 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         # Enable mouse tracking for hover events
         self.setMouseTracking(True)
         
-        name_label = QLabel(self.session['name'])
-        name_label.setStyleSheet(StyleSheets.get_label_stylesheet())
-        name_label.setMinimumWidth(0)  # Allow text to be elided
-        name_label.setWordWrap(False)  # Prevent wrapping
-        name_label.setTextFormat(Qt.PlainText)  # Use plain text
-        name_label.setSizePolicy(name_label.sizePolicy().Ignored, name_label.sizePolicy().Preferred)
+        self.name_label = QLabel(self.session['name'])
+        self.name_label.setStyleSheet(StyleSheets.get_label_stylesheet())
+        self.name_label.setMinimumWidth(0)  # Allow text to be elided
+        self.name_label.setWordWrap(False)  # Prevent wrapping
+        self.name_label.setTextFormat(Qt.PlainText)  # Use plain text
+        self.name_label.setSizePolicy(self.name_label.sizePolicy().Ignored, self.name_label.sizePolicy().Preferred)
         # Elide text from the middle to keep both start and end visible
-        font_metrics = name_label.fontMetrics()
+        font_metrics = self.name_label.fontMetrics()
         elided_text = font_metrics.elidedText(self.session['name'], Qt.ElideMiddle, 280)
-        name_label.setText(elided_text)
-        name_label.setToolTip(self.session['name'])  # Show full name on hover
-        layout.addWidget(name_label)
+        self.name_label.setText(elided_text)
+        self.name_label.setToolTip(self.session['name'])  # Show full name on hover
+        layout.addWidget(self.name_label)
         
         control_layout = QHBoxLayout()
         control_layout.setSpacing(UIConstants.CONTROL_SPACING)
@@ -125,6 +125,10 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         """Reapply all styles to reflect color changes"""
         # Reapply frame background
         self.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.APP_CONTROL_BG))
+        
+        # Reapply label style
+        if hasattr(self, 'name_label') and self.name_label:
+            self.name_label.setStyleSheet(StyleSheets.get_label_stylesheet())
         
         # Reapply slider style
         if self.slider:

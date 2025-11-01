@@ -234,6 +234,19 @@ class SettingsDialog(QDialog):
         
         button_group.setLayout(button_layout)
         
+        # Text colors group
+        text_group = QGroupBox("Text Colors")
+        text_layout = QFormLayout()
+        
+        # Text color
+        self.color_text_btn = self._create_color_button(
+            self.app.settings_manager.color_text_white,
+            lambda: self._pick_color("color_text_white", self.color_text_btn, "Text Color")
+        )
+        text_layout.addRow("Text Color:", self.color_text_btn)
+        
+        text_group.setLayout(text_layout)
+        
         # Reset button
         reset_colors_layout = QHBoxLayout()
         reset_colors_btn = QPushButton("Reset Colors to Default")
@@ -245,6 +258,7 @@ class SettingsDialog(QDialog):
         colors_widget.addWidget(bg_group)
         colors_widget.addWidget(slider_group)
         colors_widget.addWidget(button_group)
+        colors_widget.addWidget(text_group)
         colors_widget.addLayout(reset_colors_layout)
         colors_widget.addStretch()
         
@@ -326,6 +340,7 @@ class SettingsDialog(QDialog):
             "color_app_slider_handle": "#1e88e5",
             "color_primary_button_bg": "#1e88e5",
             "color_close_button_bg": "#d32f2f",
+            "color_text_white": "white",
         }
         
         self.app.settings_manager.update(defaults)
@@ -339,6 +354,7 @@ class SettingsDialog(QDialog):
         self._update_color_button(self.color_app_slider_btn, defaults["color_app_slider_handle"])
         self._update_color_button(self.color_primary_button_btn, defaults["color_primary_button_bg"])
         self._update_color_button(self.color_close_button_btn, defaults["color_close_button_bg"])
+        self._update_color_button(self.color_text_btn, defaults["color_text_white"])
         
         # Refresh the overlay to apply new colors
         self.refresh_overlay_colors()
@@ -631,6 +647,7 @@ class SettingsDialog(QDialog):
         self._update_color_button(self.color_app_slider_btn, self.app.settings_manager.color_app_slider_handle)
         self._update_color_button(self.color_primary_button_btn, self.app.settings_manager.color_primary_button_bg)
         self._update_color_button(self.color_close_button_btn, self.app.settings_manager.color_close_button_bg)
+        self._update_color_button(self.color_text_btn, self.app.settings_manager.color_text_white)
         
         # Refresh overlay
         self.app.overlay.resize(self.app.settings_manager.overlay_width, self.app.settings_manager.overlay_height)

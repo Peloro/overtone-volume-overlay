@@ -31,10 +31,10 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         # Enable mouse tracking for hover events
         self.setMouseTracking(True)
         
-        master_label = QLabel("🔊 System Volume")
-        master_label.setStyleSheet(StyleSheets.get_label_stylesheet())
-        master_label.setMinimumWidth(0)  # Allow text to be elided
-        layout.addWidget(master_label)
+        self.master_label = QLabel("System Volume")
+        self.master_label.setStyleSheet(StyleSheets.get_label_stylesheet())
+        self.master_label.setMinimumWidth(0)  # Allow text to be elided
+        layout.addWidget(self.master_label)
         
         master_control_layout = QHBoxLayout()
         master_control_layout.setSpacing(UIConstants.CONTROL_SPACING)
@@ -93,6 +93,10 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         """Reapply all styles to reflect color changes"""
         # Reapply frame background
         self.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.MASTER_FRAME_BG))
+        
+        # Reapply label style
+        if hasattr(self, 'master_label') and self.master_label:
+            self.master_label.setStyleSheet(StyleSheets.get_label_stylesheet())
         
         # Reapply slider style
         if self.slider:

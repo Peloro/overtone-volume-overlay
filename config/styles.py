@@ -128,7 +128,7 @@ class StyleSheets:
         return f"""
             QLineEdit {{
                 background-color: {Colors.DARK_INPUT_BG};
-                border: 1px solid {Colors.PRIMARY_BORDER};
+                border: 1px solid {Colors.MASTER_SLIDER_HANDLE};
                 border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
                 padding: 3px;
                 color: {Colors.TEXT_WHITE};
@@ -140,8 +140,8 @@ class StyleSheets:
     @staticmethod
     def get_mute_button_stylesheet(is_master: bool = False) -> str:
         bg_color = Colors.DARK_INPUT_BG if is_master else Colors.SECONDARY_BUTTON_BG
-        border_color = Colors.PRIMARY_BORDER if is_master else Colors.BORDER_COLOR
-        hover_color = Colors.MASTER_SLIDER_HANDLE_BORDER if is_master else Colors.SECONDARY_BUTTON_HOVER
+        border_color = Colors.MASTER_SLIDER_HANDLE if is_master else Colors.BORDER_COLOR
+        hover_color = Colors.MASTER_SLIDER_HANDLE if is_master else Colors.SECONDARY_BUTTON_HOVER
         
         return f"""
             QPushButton {{
@@ -159,14 +159,14 @@ class StyleSheets:
     def get_pagination_button_stylesheet() -> str:
         return f"""
             QPushButton {{
-                background-color: {Colors.SECONDARY_BUTTON_BG};
-                border: 1px solid {Colors.BORDER_COLOR};
+                background-color: {Colors.APP_CONTROL_BG};
+                border: 1px solid {Colors.PRIMARY_BUTTON_BG};
                 border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
                 font-size: {UIConstants.ICON_FONT_SIZE}px;
                 color: {Colors.TEXT_WHITE};
             }}
             QPushButton:hover {{
-                background-color: {Colors.SECONDARY_BUTTON_HOVER};
+                background-color: {Colors.PRIMARY_BUTTON_BG};
             }}
             QPushButton:disabled {{
                 background-color: {Colors.DISABLED_BUTTON_BG};

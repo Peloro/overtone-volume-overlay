@@ -415,6 +415,19 @@ class VolumeOverlay(QWidget):
         if self.container:
             self.container.setStyleSheet(StyleSheets.get_frame_stylesheet())
         
+        # Reapply pagination styles
+        if hasattr(self, 'pagination_frame') and self.pagination_frame:
+            self.pagination_frame.setStyleSheet(StyleSheets.get_frame_stylesheet())
+        
+        if hasattr(self, 'previous_button') and self.previous_button:
+            self.previous_button.setStyleSheet(StyleSheets.get_pagination_button_stylesheet())
+        
+        if hasattr(self, 'next_button') and self.next_button:
+            self.next_button.setStyleSheet(StyleSheets.get_pagination_button_stylesheet())
+        
+        if hasattr(self, 'page_label') and self.page_label:
+            self.page_label.setStyleSheet(StyleSheets.get_page_label_stylesheet())
+        
         # Reapply styles to all app controls
         for app_control in self.app_controls.values():
             if hasattr(app_control, 'apply_styles'):

@@ -5,7 +5,8 @@ class ColorsMeta(type):
         customizable = {
             "MAIN_BACKGROUND", "TITLE_BAR_BG", "MASTER_FRAME_BG", 
             "CONTAINER_BG", "APP_CONTROL_BG", "MASTER_SLIDER_HANDLE",
-            "APP_SLIDER_HANDLE", "PRIMARY_BUTTON_BG", "CLOSE_BUTTON_BG"
+            "APP_SLIDER_HANDLE", "PRIMARY_BUTTON_BG", "CLOSE_BUTTON_BG",
+            "TEXT_WHITE"
         }
         
         if name in customizable:
@@ -36,6 +37,7 @@ class Colors(metaclass=ColorsMeta):
         "APP_SLIDER_HANDLE": "#1e88e5",
         "PRIMARY_BUTTON_BG": "#1e88e5",
         "CLOSE_BUTTON_BG": "#d32f2f",
+        "TEXT_WHITE": "white",
     }
     
     # Static colors (not customizable)
@@ -65,7 +67,6 @@ class Colors(metaclass=ColorsMeta):
     GROUP_BORDER = "#555"
     SEPARATOR_COLOR = "#555"
     
-    TEXT_WHITE = "white"
     TEXT_GRAY = "gray"
     TEXT_LIGHT_GRAY = "#aaa"
     TEXT_DISABLED = "#555"

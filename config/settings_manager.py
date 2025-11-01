@@ -101,10 +101,11 @@ class SettingsManager:
             self.settings.get("overlay_height", UIConstants.DEFAULT_OVERLAY_HEIGHT),
             UIConstants.MIN_OVERLAY_HEIGHT, UIConstants.MAX_OVERLAY_HEIGHT
         )
-        self.settings["overlay_opacity"] = self._clamp_value(
+        # Round opacity to 2 decimal places to avoid floating point precision issues
+        self.settings["overlay_opacity"] = round(self._clamp_value(
             self.settings.get("overlay_opacity", UIConstants.DEFAULT_OPACITY),
             UIConstants.MIN_OPACITY, UIConstants.MAX_OPACITY
-        )
+        ), 2)
         
         for key, default in [
             ("hotkey_open", Hotkeys.DEFAULT_HOTKEY_OPEN),
@@ -155,7 +156,8 @@ class SettingsManager:
                 v = float(value)
             except (TypeError, ValueError):
                 v = UIConstants.DEFAULT_OPACITY
-            self.settings[key] = self._clamp_value(v, UIConstants.MIN_OPACITY, UIConstants.MAX_OPACITY)
+            # Round to 2 decimal places to avoid floating point precision issues
+            self.settings[key] = round(self._clamp_value(v, UIConstants.MIN_OPACITY, UIConstants.MAX_OPACITY), 2)
         else:
             self.settings[key] = value
     

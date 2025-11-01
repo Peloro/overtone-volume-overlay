@@ -24,7 +24,7 @@
         "Nord": {
             "overlay_width": 300,
             "overlay_height": 350,
-            "overlay_opacity": 0.9500000000000001,
+            "overlay_opacity": 0.95,
             "hotkey_open": "ctrl+/",
             "hotkey_settings": "ctrl+shift+s",
             "hotkey_quit": "ctrl+q",
@@ -211,5 +211,5 @@
             "color_text_white": "#ffe5ec"
         }
     },
-    "active_profile": "Nord"
+    "active_profile": "Sunset"
 }

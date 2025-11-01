@@ -416,6 +416,8 @@ class SettingsDialog(QDialog):
                 background-color: #555;
             }
         """)
+        # Connect double-click signal to switch profile
+        self.profile_list.itemDoubleClicked.connect(self.on_profile_double_clicked)
         profile_list_layout.addWidget(self.profile_list)
         profile_list_group.setLayout(profile_list_layout)
         profiles_widget.addWidget(profile_list_group)
@@ -573,6 +575,18 @@ class SettingsDialog(QDialog):
                 self.refresh_profile_list()
                 if profile_name == self.app.settings_manager.get_active_profile_name():
                     self.refresh_overlay_after_profile_switch()
+    
+    def on_profile_double_clicked(self, item):
+        """Handle double-click on a profile item to switch to it"""
+        # Extract the actual profile name
+        item_text = item.text()
+        profile_name = item_text.split(" (")[0].split(" [")[0]
+        
+        # Switch to the double-clicked profile
+        if self.app.settings_manager.switch_profile(profile_name):
+            self.has_unsaved_changes = False
+            self.refresh_profile_list()
+            self.refresh_overlay_after_profile_switch()
     
     def on_switch_profile(self):
         """Switch to the selected profile"""

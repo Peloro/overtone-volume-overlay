@@ -54,7 +54,7 @@ class SystemTrayIcon(QSystemTrayIcon):
             if not os.path.exists(icon_path):
                 continue
 
-            # Try ICO on Windows
+            # Try ICO on Windows - most efficient option
             if icon_file.endswith('.ico') and is_windows:
                 if not (icon := QIcon(icon_path)).isNull():
                     logger.info(f"Loaded tray icon from ICO: {icon_path}")
@@ -68,8 +68,9 @@ class SystemTrayIcon(QSystemTrayIcon):
             if icon_file.endswith('.png') and not original.hasAlphaChannel():
                 continue
 
+            # Generate only common sizes to reduce memory usage
             icon = QIcon()
-            for size in (16, 20, 24, 32, 40, 48):
+            for size in (16, 24, 32, 48):
                 canvas = QPixmap(size, size)
                 canvas.fill(Qt.transparent)
                 painter = QPainter(canvas)
@@ -119,3 +120,21 @@ class SystemTrayIcon(QSystemTrayIcon):
         """Handle tray icon activation"""
         if reason == QSystemTrayIcon.DoubleClick:
             self.app.show_overlay()
+    
+    def cleanup(self) -> None:
+        """Clean up system tray resources"""
+        try:
+            self.hide()
+            if self.menu:
+                self.menu.clear()
+                self.setContextMenu(None)
+            logger.debug("System tray cleaned up")
+        except Exception as e:
+            logger.debug(f"Error during system tray cleanup: {e}")
+    
+    def __del__(self):
+        """Destructor to ensure cleanup"""
+        try:
+            self.cleanup()
+        except Exception:
+            pass

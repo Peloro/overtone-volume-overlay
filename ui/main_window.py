@@ -33,6 +33,12 @@ class VolumeOverlay(QWidget):
         self._filter_timer.setSingleShot(True)
         self._filter_timer.timeout.connect(self.apply_filter)
         
+        # Debounce resize events
+        self._resize_timer = QTimer(self)
+        self._resize_timer.setSingleShot(True)
+        self._resize_timer.setInterval(100)  # 100ms debounce
+        self._resize_timer.timeout.connect(self._handle_resize)
+        
         # Hide window before initializing UI to prevent flash on startup
         self.hide()
         
@@ -226,7 +232,10 @@ class VolumeOverlay(QWidget):
     
     def on_filter_changed(self, text: str) -> None:
         """Handle filter text change"""
-        self.filter_text = text.lower().strip()
+        new_filter = text.lower().strip()
+        if new_filter == self.filter_text:
+            return  # No change, skip processing
+        self.filter_text = new_filter
         self.clear_filter_button.setVisible(bool(self.filter_text))
         self.current_page = 0
         self._filter_timer.start(UIConstants.FILTER_DEBOUNCE_MS)
@@ -246,8 +255,23 @@ class VolumeOverlay(QWidget):
     
     def refresh_applications(self) -> None:
         """Refresh the list of applications with volume controls"""
-        self.all_sessions = self.app.audio_controller.get_audio_sessions()
-        self.apply_filter()
+        new_sessions = self.app.audio_controller.get_audio_sessions()
+        
+        # Only update if sessions have actually changed (reduce unnecessary UI updates)
+        if self._sessions_differ(self.all_sessions, new_sessions):
+            self.all_sessions = new_sessions
+            self.apply_filter()
+    
+    def _sessions_differ(self, old_sessions: List[Dict[str, Any]], new_sessions: List[Dict[str, Any]]) -> bool:
+        """Check if sessions have meaningfully changed"""
+        if len(old_sessions) != len(new_sessions):
+            return True
+        
+        # Compare session names and PIDs as a quick check
+        old_set = {(s['name'], tuple(s['pids'])) for s in old_sessions}
+        new_set = {(s['name'], tuple(s['pids'])) for s in new_sessions}
+        
+        return old_set != new_set
     
     def get_apps_per_page(self) -> int:
         """Calculate how many apps can fit in current window height"""
@@ -289,15 +313,17 @@ class VolumeOverlay(QWidget):
         """Update or create controls for the given sessions"""
         current_names = {session['name'] for session in page_sessions}
 
-        # Remove controls no longer on this page
-        for name in set(self.app_controls.keys()) - current_names:
-            if widget := self.app_controls.pop(name, None):
-                self.container_layout.removeWidget(widget)
-                widget.setParent(None)
-                widget.deleteLater()
+        # Remove controls no longer on this page (batch operations)
+        to_remove = set(self.app_controls.keys()) - current_names
+        if to_remove:
+            for name in to_remove:
+                if widget := self.app_controls.pop(name, None):
+                    self.container_layout.removeWidget(widget)
+                    widget.setParent(None)
+                    widget.deleteLater()
 
         # Add or update controls for sessions on this page
-        for session in page_sessions:
+        for idx, session in enumerate(page_sessions):
             name = session['name']
             if control := self.app_controls.get(name):
                 control.update_session(session)
@@ -324,22 +350,39 @@ class VolumeOverlay(QWidget):
         self.current_page = current_page
         
         page_sessions = self.filtered_sessions[start_idx:start_idx + apps_per_page]
+        
+        # Disable updates during batch operations for better performance
+        self.setUpdatesEnabled(False)
         self._update_controls_for_sessions(page_sessions)
         self._update_pagination_ui(current_page, total_pages)
+        self.setUpdatesEnabled(True)
     
     def clear_all_controls(self) -> None:
         """Clear all app controls from layout"""
-        for widget in self.app_controls.values():
-            self.container_layout.removeWidget(widget)
-            widget.setParent(None)
-            widget.deleteLater()
+        # Stop any updates during cleanup
+        self.setUpdatesEnabled(False)
+        
+        # Clear app controls first
+        for name, widget in list(self.app_controls.items()):
+            try:
+                self.container_layout.removeWidget(widget)
+                widget.setParent(None)
+                widget.deleteLater()
+            except Exception:
+                pass
         self.app_controls.clear()
         
+        # Clear any remaining widgets in layout (excluding the stretch item)
         while self.container_layout.count() > 1:
             item = self.container_layout.takeAt(0)
             if item and (widget := item.widget()):
-                widget.setParent(None)
-                widget.deleteLater()
+                try:
+                    widget.setParent(None)
+                    widget.deleteLater()
+                except Exception:
+                    pass
+        
+        self.setUpdatesEnabled(True)
     
     def previous_page(self) -> None:
         """Go to previous page"""
@@ -356,8 +399,13 @@ class VolumeOverlay(QWidget):
             self.update_page_display()
     
     def resizeEvent(self, event):
-        """Handle window resize to update pagination"""
+        """Handle window resize to update pagination - debounced"""
         super().resizeEvent(event)
+        if hasattr(self, '_resize_timer') and hasattr(self, 'all_sessions'):
+            self._resize_timer.start()
+    
+    def _handle_resize(self):
+        """Actually handle the resize after debouncing"""
         if hasattr(self, 'all_sessions'):
             self.update_page_display()
     
@@ -393,9 +441,17 @@ class VolumeOverlay(QWidget):
         super().hideEvent(event)
         if hasattr(self, '_filter_timer') and self._filter_timer:
             self._filter_timer.stop()
+        if hasattr(self, '_resize_timer') and self._resize_timer:
+            self._resize_timer.stop()
     
     def closeEvent(self, event):
         """Handle close event - hide instead of closing"""
+        # Stop timers during close
+        if hasattr(self, '_filter_timer') and self._filter_timer:
+            self._filter_timer.stop()
+        if hasattr(self, '_resize_timer') and self._resize_timer:
+            self._resize_timer.stop()
+        
         event.ignore()
         self.app.hide_overlay()
     
@@ -425,3 +481,13 @@ class VolumeOverlay(QWidget):
         
         # Force update
         self.update()
+    
+    def __del__(self):
+        """Destructor to ensure cleanup"""
+        try:
+            if hasattr(self, '_filter_timer') and self._filter_timer:
+                self._filter_timer.stop()
+            if hasattr(self, '_resize_timer') and self._resize_timer:
+                self._resize_timer.stop()
+        except Exception:
+            pass

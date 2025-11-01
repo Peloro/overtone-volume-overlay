@@ -72,8 +72,16 @@ class SettingsManager:
     def _do_save_settings(self) -> None:
         """Actually write settings to disk"""
         try:
-            with open(self.settings_file, 'w') as f:
+            # Write to temp file first, then rename for atomic operation
+            temp_file = self.settings_file + '.tmp'
+            with open(temp_file, 'w') as f:
                 json.dump(self.settings, f, indent=4)
+            
+            # Atomic rename (on Windows, need to remove target first)
+            if os.path.exists(self.settings_file):
+                os.remove(self.settings_file)
+            os.rename(temp_file, self.settings_file)
+            
             logger.debug(f"Settings saved to {self.settings_file}")
         except Exception as e:
             logger.error(f"Error saving settings: {e}", exc_info=True)

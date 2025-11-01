@@ -27,12 +27,20 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         new_val = int(session['volume'] * 100)
         new_muted = session.get('muted', False)
         
+        # Batch signal blocking to reduce overhead
+        needs_update = False
+        
         if self.slider and self.slider.value() != new_val:
             self.slider.blockSignals(True)
             self.slider.setValue(new_val)
             self.slider.blockSignals(False)
-        if self.volume_text and self.volume_text.text() != str(new_val):
-            self.volume_text.setText(str(new_val))
+            needs_update = True
+            
+        if self.volume_text:
+            new_val_str = str(new_val)
+            if self.volume_text.text() != new_val_str:
+                self.volume_text.setText(new_val_str)
+                
         if self.is_muted != new_muted:
             self.is_muted = new_muted
             self.update_mute_icon(new_muted)

@@ -32,6 +32,10 @@ class AudioController:
         # Optional TTL in seconds for window-title based names in case titles change
         self._name_timestamps: Dict[int, float] = {}
         self._name_ttl_seconds: float = UIConstants.NAME_CACHE_TTL_SECONDS
+        # Cache for process exe paths to avoid repeated process.exe() calls
+        self._pid_to_exe_cache: Dict[int, Optional[str]] = {}
+        # Maximum cache sizes to prevent memory bloat
+        self._max_cache_size = 100
     
     def _get_master_volume_interface(self) -> None:
         """Get the master volume interface"""
@@ -101,18 +105,23 @@ class AudioController:
     
     def _get_window_title_by_pid(self, pid: int) -> Optional[str]:
         """Get the main window title for a given process ID"""
-        titles = []
-        
-        def enum_window_callback(hwnd, title_list):
-            """Callback function for enumerating windows"""
-            if win32gui.IsWindowVisible(hwnd):
-                _, window_pid = win32process.GetWindowThreadProcessId(hwnd)
-                if window_pid == pid:
-                    title = win32gui.GetWindowText(hwnd)
-                    if title:
-                        title_list.append(title)
-        
         try:
+            # Try to find window directly by PID instead of enumerating all
+            def enum_window_callback(hwnd, result_list):
+                """Callback function for enumerating windows"""
+                try:
+                    if win32gui.IsWindowVisible(hwnd):
+                        _, window_pid = win32process.GetWindowThreadProcessId(hwnd)
+                        if window_pid == pid:
+                            title = win32gui.GetWindowText(hwnd)
+                            if title:
+                                result_list.append(title)
+                                return False  # Stop enumeration early
+                except Exception:
+                    pass
+                return True
+            
+            titles = []
             win32gui.EnumWindows(enum_window_callback, titles)
             return titles[0] if titles else None
         except Exception as e:
@@ -128,11 +137,36 @@ class AudioController:
         # Try window title, then file description, finally process name
         display_name = self._get_window_title_by_pid(pid)
         
-        if not display_name and (exe_path := getattr(process, 'exe', lambda: None)()) and os.path.exists(exe_path):
-            display_name = self._get_file_description(exe_path)
+        if not display_name:
+            # Use cached exe path or fetch and cache it
+            exe_path = self._pid_to_exe_cache.get(pid)
+            if exe_path is None:
+                try:
+                    exe_path = getattr(process, 'exe', lambda: None)()
+                    # Limit cache size
+                    if len(self._pid_to_exe_cache) >= self._max_cache_size:
+                        # Remove oldest entries (simple FIFO)
+                        old_pids = list(self._pid_to_exe_cache.keys())[:20]
+                        for old_pid in old_pids:
+                            self._pid_to_exe_cache.pop(old_pid, None)
+                    self._pid_to_exe_cache[pid] = exe_path
+                except Exception:
+                    exe_path = None
+                    self._pid_to_exe_cache[pid] = None
+            
+            if exe_path and os.path.exists(exe_path):
+                display_name = self._get_file_description(exe_path)
         
         if not display_name:
             display_name = process_name[:-4] if process_name.lower().endswith('.exe') else process_name
+        
+        # Limit cache size
+        if len(self._display_name_cache) >= self._max_cache_size:
+            # Remove expired entries first
+            expired = [k for k, v in self._name_timestamps.items() if now - v >= self._name_ttl_seconds]
+            for k in expired:
+                self._display_name_cache.pop(k, None)
+                self._name_timestamps.pop(k, None)
         
         self._display_name_cache[pid] = display_name
         self._name_timestamps[pid] = now
@@ -151,43 +185,48 @@ class AudioController:
             audio_sessions = AudioUtilities.GetAllSessions()
             
             for session in audio_sessions:
-                if session.Process:
+                if not session.Process:
+                    continue
+                    
+                try:
                     volume = session.SimpleAudioVolume.GetMasterVolume()
                     muted = session.SimpleAudioVolume.GetMute()
-                    
-                    process_name = session.Process.name()
-                    pid = session.Process.pid
-                    
-                    # Get display name (window title, file description, or process name)
-                    display_name = self._get_display_name(process_name, pid, session.Process)
-                    
-                    # Update PID map for fast lookups on set operations
-                    self._pid_to_session[pid] = session
+                except Exception:
+                    continue  # Skip invalid sessions
+                
+                process_name = session.Process.name()
+                pid = session.Process.pid
+                
+                # Get display name (window title, file description, or process name)
+                display_name = self._get_display_name(process_name, pid, session.Process)
+                
+                # Update PID map for fast lookups on set operations
+                self._pid_to_session[pid] = session
 
-                    # Group by display name
-                    if display_name not in grouped_sessions:
-                        # First session with this name
-                        grouped_sessions[display_name] = {
-                            'name': display_name,
-                            'pids': [pid],
-                            'sessions': [session],
-                            'volume': volume,
-                            'muted': muted
-                        }
-                    else:
-                        # Additional session with same name - add to group
-                        grouped_sessions[display_name]['pids'].append(pid)
-                        grouped_sessions[display_name]['sessions'].append(session)
-                        # Use average volume of all sessions
-                        existing_vol = grouped_sessions[display_name]['volume']
-                        count = len(grouped_sessions[display_name]['pids'])
-                        grouped_sessions[display_name]['volume'] = (existing_vol * (count - 1) + volume) / count
-                        # Muted if ANY session is muted
-                        if muted:
-                            grouped_sessions[display_name]['muted'] = True
+                # Group by display name
+                if display_name not in grouped_sessions:
+                    # First session with this name
+                    grouped_sessions[display_name] = {
+                        'name': display_name,
+                        'pids': [pid],
+                        'sessions': [session],
+                        'volume': volume,
+                        'muted': muted
+                    }
+                else:
+                    # Additional session with same name - add to group
+                    group = grouped_sessions[display_name]
+                    group['pids'].append(pid)
+                    group['sessions'].append(session)
+                    # Use average volume of all sessions
+                    count = len(group['pids'])
+                    group['volume'] = (group['volume'] * (count - 1) + volume) / count
+                    # Muted if ANY session is muted
+                    if muted:
+                        group['muted'] = True
             
-            # Convert grouped sessions to list
-            sessions = list(grouped_sessions.values())
+            # Convert grouped sessions to list (sorted for consistency)
+            sessions = sorted(grouped_sessions.values(), key=lambda x: x['name'].lower())
             
         except Exception as e:
             logger.error(f"Error getting audio sessions: {e}", exc_info=True)
@@ -248,16 +287,35 @@ class AudioController:
     
     def cleanup(self) -> None:
         """Clean up resources"""
+        logger.debug("Starting audio controller cleanup")
+        
+        # Clear all session references first
+        self._pid_to_session.clear()
+        
+        # Clear caches
         self._display_name_cache.clear()
         self._file_desc_cache.clear()
-        self._pid_to_session.clear()
         self._name_timestamps.clear()
-        self.master_volume = None
-
+        self._pid_to_exe_cache.clear()
+        
+        # Release master volume interface
+        if self.master_volume is not None:
+            try:
+                # Release the COM object reference
+                self.master_volume.Release()
+                logger.debug("Released master volume COM interface")
+            except Exception as e:
+                logger.debug(f"Error releasing master volume interface: {e}")
+            finally:
+                self.master_volume = None
+        
+        # Allow COM to clean up - but don't call CoUninitialize as it may be 
+        # shared with other parts of the app or cause issues during shutdown
         try:
-            import comtypes
-            if hasattr(comtypes, 'CoUninitialize'):
-                comtypes.CoUninitialize()
-                logger.debug("Called comtypes.CoUninitialize() during cleanup")
+            import gc
+            gc.collect()  # Force garbage collection to clean up COM references
+            logger.debug("Forced garbage collection for COM cleanup")
         except Exception as e:
-            logger.debug(f"Error during COM uninitialization: {e}")
+            logger.debug(f"Error during garbage collection: {e}")
+        
+        logger.debug("Audio controller cleanup completed")

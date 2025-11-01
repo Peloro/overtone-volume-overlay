@@ -19,10 +19,10 @@ class UIConstants:
     BUTTON_HEIGHT = 24
     VOLUME_TEXT_WIDTH = 40
     
-    REFRESH_INTERVAL = 3000
+    REFRESH_INTERVAL = 5000  # Increased to 5s to reduce CPU usage
     FILTER_DEBOUNCE_MS = 150  # Debounce time for filter input
     ERROR_FLASH_DURATION_MS = 300  # Duration for error visual feedback
-    NAME_CACHE_TTL_SECONDS = 15.0  # TTL for cached application names
+    NAME_CACHE_TTL_SECONDS = 30.0  # Increased TTL to reduce window enumeration
     
     DEFAULT_OPACITY = 0.9
     MIN_OPACITY = 0.1

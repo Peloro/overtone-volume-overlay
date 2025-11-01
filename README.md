@@ -6,6 +6,53 @@
 
 A modern, lightweight volume mixer overlay for Windows with per-application volume control, built with Python and PyQt5.
 
+## Table of Contents
+
+- [Features](#features)
+  - [Core Functionality](#core-functionality)
+  - [Advanced Features](#advanced-features)
+- [Screenshots](#screenshots)
+- [What's New in Version 1.0.0](#whats-new-in-version-100)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Usage](#usage)
+  - [Starting the Application](#starting-the-application)
+  - [Default Hotkeys](#default-hotkeys)
+  - [Controls](#controls)
+  - [Application Filter](#application-filter)
+  - [Pagination](#pagination)
+  - [Settings](#settings)
+- [Tips & Tricks](#tips--tricks)
+  - [Workflow Optimization](#workflow-optimization)
+  - [Customization Ideas](#customization-ideas)
+  - [Hotkey Suggestions](#hotkey-suggestions)
+  - [Troubleshooting](#troubleshooting)
+- [Technical Details](#technical-details)
+  - [Architecture](#architecture)
+  - [Key Features Implementation](#key-features-implementation)
+  - [Dependencies](#dependencies)
+- [Configuration](#configuration)
+- [Development](#development)
+  - [Running from Source](#running-from-source)
+  - [Project Structure](#project-structure)
+  - [Building from Source](#building-from-source)
+- [Known Issues](#known-issues)
+- [FAQ](#faq)
+  - [General Questions](#general-questions)
+  - [Profiles](#profiles)
+  - [Customization](#customization)
+  - [Troubleshooting](#troubleshooting-1)
+- [Contributing](#contributing)
+  - [How to Contribute](#how-to-contribute)
+  - [Areas for Contribution](#areas-for-contribution)
+  - [Code Guidelines](#code-guidelines)
+- [Roadmap](#roadmap)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
+- [Author](#author)
+- [Support](#support)
+
 ## Features
 
 ### Core Functionality
@@ -67,7 +114,6 @@ A modern, lightweight volume mixer overlay for Windows with per-application volu
 
 - Windows 10/11
 - Python 3.8 or higher
-- Administrator privileges (required for global hotkeys)
 
 ## Installation
 
@@ -194,7 +240,6 @@ Manage multiple settings configurations:
 - Set quick access to settings for frequent adjustments
 
 ### Troubleshooting
-- **Hotkeys Not Working**: Ensure the application is running with administrator privileges
 - **Apps Not Showing**: Some system apps may not expose audio sessions - this is normal
 - **Performance**: If you have many audio apps, use the filter to reduce visible items
 - **Color Changes Not Applying**: Try switching profiles or restarting the overlay
@@ -433,9 +478,6 @@ SOFTWARE.
 ## FAQ
 
 ### General Questions
-
-**Q: Why does the application need administrator privileges?**  
-A: Administrator privileges are required for global hotkey registration on Windows. Without them, hotkeys won't work outside the application window.
 
 **Q: Can I use Overtone on multiple monitors?**  
 A: Yes! The overlay can be dragged to any position on any monitor and will remember its location.

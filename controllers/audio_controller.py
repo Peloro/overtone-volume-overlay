@@ -22,6 +22,10 @@ logger = get_logger(__name__)
 
 
 class AudioController:
+    """Audio controller with caching optimizations"""
+    # Constants
+    _EXE_EXTENSION = '.exe'
+    _EXE_EXTENSION_LENGTH = 4  # Length of ".exe"
     def __init__(self) -> None:
         self._get_master_volume_interface()
         # Cache for display names by PID and exe path to avoid repeated expensive calls
@@ -34,8 +38,10 @@ class AudioController:
         self._name_ttl_seconds: float = UIConstants.NAME_CACHE_TTL_SECONDS
         # Cache for process exe paths to avoid repeated process.exe() calls
         self._pid_to_exe_cache: Dict[int, Optional[str]] = {}
+        # Cache window titles to avoid repeated enumeration
+        self._window_title_cache: Dict[int, Optional[str]] = {}
         # Maximum cache sizes to prevent memory bloat
-        self._max_cache_size = 100
+        self._max_cache_size = UIConstants.MAX_CACHE_SIZE
     
     def _get_master_volume_interface(self) -> None:
         """Get the master volume interface"""
@@ -105,6 +111,13 @@ class AudioController:
     
     def _get_window_title_by_pid(self, pid: int) -> Optional[str]:
         """Get the main window title for a given process ID"""
+        # Check cache first
+        now = time()
+        if pid in self._window_title_cache:
+            cached_time = self._name_timestamps.get(f"win_{pid}", 0)
+            if now - cached_time < self._name_ttl_seconds:
+                return self._window_title_cache[pid]
+        
         try:
             # Try to find window directly by PID instead of enumerating all
             def enum_window_callback(hwnd, result_list):
@@ -123,7 +136,12 @@ class AudioController:
             
             titles = []
             win32gui.EnumWindows(enum_window_callback, titles)
-            return titles[0] if titles else None
+            result = titles[0] if titles else None
+            
+            # Cache the result (even if None)
+            self._window_title_cache[pid] = result
+            self._name_timestamps[f"win_{pid}"] = now
+            return result
         except Exception as e:
             logger.debug(f"Error getting window title for PID {pid}: {e}")
         return None
@@ -146,7 +164,7 @@ class AudioController:
                     # Limit cache size
                     if len(self._pid_to_exe_cache) >= self._max_cache_size:
                         # Remove oldest entries (simple FIFO)
-                        old_pids = list(self._pid_to_exe_cache.keys())[:20]
+                        old_pids = list(self._pid_to_exe_cache.keys())[:UIConstants.CACHE_CLEANUP_BATCH_SIZE]
                         for old_pid in old_pids:
                             self._pid_to_exe_cache.pop(old_pid, None)
                     self._pid_to_exe_cache[pid] = exe_path
@@ -158,7 +176,7 @@ class AudioController:
                 display_name = self._get_file_description(exe_path)
         
         if not display_name:
-            display_name = process_name[:-4] if process_name.lower().endswith('.exe') else process_name
+            display_name = process_name[:-self._EXE_EXTENSION_LENGTH] if process_name.lower().endswith(self._EXE_EXTENSION) else process_name
         
         # Limit cache size
         if len(self._display_name_cache) >= self._max_cache_size:
@@ -167,6 +185,12 @@ class AudioController:
             for k in expired:
                 self._display_name_cache.pop(k, None)
                 self._name_timestamps.pop(k, None)
+            # If still too large, remove oldest entries (simple FIFO)
+            if len(self._display_name_cache) >= self._max_cache_size:
+                old_pids = list(self._display_name_cache.keys())[:UIConstants.CACHE_CLEANUP_BATCH_SIZE]
+                for old_pid in old_pids:
+                    self._display_name_cache.pop(old_pid, None)
+                    self._name_timestamps.pop(old_pid, None)
         
         self._display_name_cache[pid] = display_name
         self._name_timestamps[pid] = now
@@ -258,9 +282,12 @@ class AudioController:
     def set_application_volume(self, pids, volume: float) -> bool:
         """Set volume for a specific application by PID(s)"""
         try:
-            return any((session.SimpleAudioVolume.SetMasterVolume(volume, None), True)[1]
-                      for pid in self._normalize_pids(pids) 
-                      if (session := self._get_or_refresh_session(pid)))
+            success = False
+            for pid in self._normalize_pids(pids):
+                if session := self._get_or_refresh_session(pid):
+                    session.SimpleAudioVolume.SetMasterVolume(volume, None)
+                    success = True
+            return success
         except Exception as e:
             logger.error(f"Error setting volume: {e}")
             return False
@@ -278,9 +305,12 @@ class AudioController:
     def set_application_mute(self, pids, mute: bool) -> bool:
         """Mute or unmute a specific application by PID(s)"""
         try:
-            return any((session.SimpleAudioVolume.SetMute(mute, None), True)[1]
-                      for pid in self._normalize_pids(pids) 
-                      if (session := self._get_or_refresh_session(pid)))
+            success = False
+            for pid in self._normalize_pids(pids):
+                if session := self._get_or_refresh_session(pid):
+                    session.SimpleAudioVolume.SetMute(mute, None)
+                    success = True
+            return success
         except Exception as e:
             logger.error(f"Error setting mute: {e}")
             return False
@@ -297,6 +327,7 @@ class AudioController:
         self._file_desc_cache.clear()
         self._name_timestamps.clear()
         self._pid_to_exe_cache.clear()
+        self._window_title_cache.clear()
         
         # Release master volume interface
         if self.master_volume is not None:

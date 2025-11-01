@@ -36,7 +36,7 @@ class VolumeOverlay(QWidget):
         # Debounce resize events
         self._resize_timer = QTimer(self)
         self._resize_timer.setSingleShot(True)
-        self._resize_timer.setInterval(100)  # 100ms debounce
+        self._resize_timer.setInterval(UIConstants.RESIZE_DEBOUNCE_MS)
         self._resize_timer.timeout.connect(self._handle_resize)
         
         # Hide window before initializing UI to prevent flash on startup
@@ -54,7 +54,7 @@ class VolumeOverlay(QWidget):
         self.setMaximumSize(UIConstants.MAX_OVERLAY_WIDTH, UIConstants.MAX_OVERLAY_HEIGHT)
         
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(*[UIConstants.LAYOUT_MARGIN] * 4)
+        main_layout.setContentsMargins(*[UIConstants.LAYOUT_MARGIN] * UIConstants.MARGIN_SIDES_COUNT)
         main_layout.setSizeConstraint(main_layout.SetNoConstraint)
         
         self.title_bar = self._create_title_bar()
@@ -75,7 +75,7 @@ class VolumeOverlay(QWidget):
         self.container.setSizePolicy(self.container.sizePolicy().horizontalPolicy(), self.container.sizePolicy().Ignored)
         self.container_layout = QVBoxLayout(self.container)
         self.container_layout.setAlignment(Qt.AlignTop)
-        self.container_layout.setContentsMargins(*[UIConstants.FRAME_MARGIN] * 4)
+        self.container_layout.setContentsMargins(*[UIConstants.FRAME_MARGIN] * UIConstants.MARGIN_SIDES_COUNT)
         self.container_layout.setSpacing(UIConstants.FRAME_SPACING)
         # Add stretch at the bottom to push all controls to the top
         self.container_layout.addStretch(1)
@@ -99,9 +99,9 @@ class VolumeOverlay(QWidget):
         title_layout = QHBoxLayout(title_bar)
         title_layout.setContentsMargins(UIConstants.FRAME_MARGIN, 0, UIConstants.FRAME_MARGIN, 0)
 
-        title_label = QLabel("Overtone")
-        title_label.setStyleSheet(StyleSheets.get_title_label_stylesheet())
-        title_layout.addWidget(title_label)
+        self.title_label = QLabel("Overtone")
+        self.title_label.setStyleSheet(StyleSheets.get_title_label_stylesheet())
+        title_layout.addWidget(self.title_label)
         title_layout.addStretch()
         
         # Create filter toggle and control buttons
@@ -115,8 +115,14 @@ class VolumeOverlay(QWidget):
         self.filter_toggle_btn = create_standard_button(*buttons[0])
         title_layout.addWidget(self.filter_toggle_btn)
         
-        for btn_config in buttons[1:]:
-            title_layout.addWidget(create_standard_button(*btn_config))
+        # Store references to other buttons for style updates
+        self.settings_btn = create_standard_button(*buttons[1])
+        self.minimize_btn = create_standard_button(*buttons[2])
+        self.close_btn = create_standard_button(*buttons[3])
+        
+        title_layout.addWidget(self.settings_btn)
+        title_layout.addWidget(self.minimize_btn)
+        title_layout.addWidget(self.close_btn)
         
         title_bar.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.TITLE_BAR_BG))
         return title_bar
@@ -146,7 +152,7 @@ class VolumeOverlay(QWidget):
         """Create the search/filter bar"""
         filter_frame = QFrame()
         filter_layout = QHBoxLayout(filter_frame)
-        filter_layout.setContentsMargins(*[UIConstants.FRAME_MARGIN] * 4)
+        filter_layout.setContentsMargins(*[UIConstants.FRAME_MARGIN] * UIConstants.MARGIN_SIDES_COUNT)
         
         self.filter_input = QLineEdit()
         self.filter_input.setPlaceholderText("Filter applications...")
@@ -460,14 +466,22 @@ class VolumeOverlay(QWidget):
         # Reapply overlay stylesheet
         self.setStyleSheet(StyleSheets.get_overlay_stylesheet())
         
-        # Reapply component styles
+        # Reapply component styles - all must be called as functions to get fresh color values
         style_updates = [
             (self.title_bar, lambda: StyleSheets.get_frame_stylesheet(bg_color=Colors.TITLE_BAR_BG)),
-            (self.container, StyleSheets.get_frame_stylesheet),
-            (getattr(self, 'pagination_frame', None), StyleSheets.get_frame_stylesheet),
+            (self.container, lambda: StyleSheets.get_frame_stylesheet(bg_color=Colors.CONTAINER_BG)),
+            (getattr(self, 'pagination_frame', None), lambda: StyleSheets.get_frame_stylesheet()),
+            (getattr(self, 'filter_bar', None), lambda: StyleSheets.get_frame_stylesheet()),
             (getattr(self, 'previous_button', None), StyleSheets.get_pagination_button_stylesheet),
             (getattr(self, 'next_button', None), StyleSheets.get_pagination_button_stylesheet),
             (getattr(self, 'page_label', None), StyleSheets.get_page_label_stylesheet),
+            (getattr(self, 'filter_input', None), StyleSheets.get_filter_input_stylesheet),
+            (getattr(self, 'clear_filter_button', None), StyleSheets.get_clear_filter_button_stylesheet),
+            (getattr(self, 'title_label', None), StyleSheets.get_title_label_stylesheet),
+            (getattr(self, 'filter_toggle_btn', None), StyleSheets.get_settings_button_stylesheet),
+            (getattr(self, 'settings_btn', None), StyleSheets.get_settings_button_stylesheet),
+            (getattr(self, 'minimize_btn', None), StyleSheets.get_minimize_button_stylesheet),
+            (getattr(self, 'close_btn', None), StyleSheets.get_close_button_stylesheet),
         ]
         
         for widget, stylesheet_func in style_updates:

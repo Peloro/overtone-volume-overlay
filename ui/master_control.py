@@ -16,7 +16,7 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         QFrame.__init__(self)
         BaseVolumeControl.__init__(self)
         self.audio_controller = audio_controller
-        self.init_volume_state(int(audio_controller.get_master_volume() * 100), audio_controller.get_master_mute())
+        self.init_volume_state(int(audio_controller.get_master_volume() * UIConstants.VOLUME_PERCENTAGE_FACTOR), audio_controller.get_master_mute())
         self.init_ui()
     
     def init_ui(self):
@@ -41,7 +41,7 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
 
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(0)
-        self.slider.setMaximum(100)
+        self.slider.setMaximum(UIConstants.VOLUME_PERCENTAGE_FACTOR)
         self.slider.setValue(self.previous_volume)
         self.slider.setStyleSheet(StyleSheets.get_master_slider_stylesheet())
         self.slider.valueChanged.connect(self.on_volume_changed)
@@ -73,7 +73,7 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         """Handle master volume slider change"""
         self.handle_volume_slider_change(
             value,
-            lambda vol: self.audio_controller.set_master_volume(vol)
+            lambda vol: self.audio_controller.set_master_volume(vol / UIConstants.VOLUME_PERCENTAGE_FACTOR)
         )
     
     def on_mute_clicked(self) -> None:

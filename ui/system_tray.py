@@ -20,6 +20,11 @@ class SystemTrayIcon(QSystemTrayIcon):
         
         self.setToolTip("Overtone")
         
+        from config import UIConstants
+        self._icon_sizes = (UIConstants.ICON_SIZE_16, UIConstants.ICON_SIZE_24, 
+                           UIConstants.ICON_SIZE_32, UIConstants.ICON_SIZE_48)
+        self._fallback_icon_size = UIConstants.FALLBACK_ICON_SIZE
+        
         self.menu = QMenu()
         
         show_action = QAction("Show Overlay", self.menu)
@@ -70,7 +75,7 @@ class SystemTrayIcon(QSystemTrayIcon):
 
             # Generate only common sizes to reduce memory usage
             icon = QIcon()
-            for size in (16, 24, 32, 48):
+            for size in self._icon_sizes:
                 canvas = QPixmap(size, size)
                 canvas.fill(Qt.transparent)
                 painter = QPainter(canvas)
@@ -89,7 +94,7 @@ class SystemTrayIcon(QSystemTrayIcon):
     
     def _create_fallback_icon(self) -> QIcon:
         """Create a simple fallback icon if no icon files are found"""
-        pixmap = QPixmap(32, 32)
+        pixmap = QPixmap(self._fallback_icon_size, self._fallback_icon_size)
         pixmap.fill(Qt.transparent)
         
         painter = QPainter(pixmap)

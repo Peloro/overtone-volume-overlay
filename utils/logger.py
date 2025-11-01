@@ -4,10 +4,29 @@ from logging.handlers import RotatingFileHandler
 
 _loggers = {}
 
+# Default values to avoid circular import
+_DEFAULT_LOG_MAX_BYTES = 5 * 1024 * 1024  # 5MB
+_DEFAULT_LOG_BACKUP_COUNT = 3
+
 
 def setup_logger(name: str = "overtone", log_file: str = "overtone.log", level: int = logging.INFO,
-                max_bytes: int = 5 * 1024 * 1024, backup_count: int = 3) -> logging.Logger:
+                max_bytes: int = None, backup_count: int = None) -> logging.Logger:
     """Setup and configure a logger with file and console handlers"""
+    # Use defaults if not provided
+    if max_bytes is None:
+        try:
+            from config import UIConstants
+            max_bytes = UIConstants.LOG_MAX_BYTES
+        except ImportError:
+            max_bytes = _DEFAULT_LOG_MAX_BYTES
+    
+    if backup_count is None:
+        try:
+            from config import UIConstants
+            backup_count = UIConstants.LOG_BACKUP_COUNT
+        except ImportError:
+            backup_count = _DEFAULT_LOG_BACKUP_COUNT
+    
     if name in _loggers:
         return _loggers[name]
     

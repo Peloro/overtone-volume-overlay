@@ -20,7 +20,7 @@ class SettingsManager:
         self.settings: Dict[str, Any] = {}
         self._default_settings = self._get_default_settings()
         self._save_timer: QTimer = None
-        self._save_debounce_ms = 500  # Wait 500ms after last change before saving
+        self._save_debounce_ms = UIConstants.SETTINGS_SAVE_DEBOUNCE_MS
         self.profiles_manager = ProfilesManager()
         self.load_settings()
     
@@ -93,11 +93,11 @@ class SettingsManager:
             self.settings.get("overlay_height", UIConstants.DEFAULT_OVERLAY_HEIGHT),
             UIConstants.MIN_OVERLAY_HEIGHT, UIConstants.MAX_OVERLAY_HEIGHT
         )
-        # Round opacity to 2 decimal places to avoid floating point precision issues
+        # Round opacity to avoid floating point precision issues
         self.settings["overlay_opacity"] = round(self._clamp_value(
             self.settings.get("overlay_opacity", UIConstants.DEFAULT_OPACITY),
             UIConstants.MIN_OPACITY, UIConstants.MAX_OPACITY
-        ), 2)
+        ), UIConstants.OPACITY_DECIMAL_PLACES)
         
         for key, default in [
             ("hotkey_open", Hotkeys.DEFAULT_HOTKEY_OPEN),
@@ -148,8 +148,8 @@ class SettingsManager:
                 v = float(value)
             except (TypeError, ValueError):
                 v = UIConstants.DEFAULT_OPACITY
-            # Round to 2 decimal places to avoid floating point precision issues
-            self.settings[key] = round(self._clamp_value(v, UIConstants.MIN_OPACITY, UIConstants.MAX_OPACITY), 2)
+            # Round to avoid floating point precision issues
+            self.settings[key] = round(self._clamp_value(v, UIConstants.MIN_OPACITY, UIConstants.MAX_OPACITY), UIConstants.OPACITY_DECIMAL_PLACES)
         else:
             self.settings[key] = value
     

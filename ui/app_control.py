@@ -18,13 +18,13 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         BaseVolumeControl.__init__(self)
         self.session = session
         self.audio_controller = audio_controller
-        self.init_volume_state(int(session['volume'] * 100), session.get('muted', False))
+        self.init_volume_state(int(session['volume'] * UIConstants.VOLUME_PERCENTAGE_FACTOR), session.get('muted', False))
         self.init_ui()
 
     def update_session(self, session: Dict[str, Any]) -> None:
         """Update UI state from a refreshed session without recreating the widget"""
         self.session = session
-        new_val = int(session['volume'] * 100)
+        new_val = int(session['volume'] * UIConstants.VOLUME_PERCENTAGE_FACTOR)
         new_muted = session.get('muted', False)
         
         # Batch signal blocking to reduce overhead
@@ -48,7 +48,7 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
     def init_ui(self):
         """Initialize the UI for a single app control"""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*[UIConstants.FRAME_MARGIN] * 4)
+        layout.setContentsMargins(*[UIConstants.FRAME_MARGIN] * UIConstants.MARGIN_SIDES_COUNT)
         layout.setSpacing(UIConstants.CONTROL_SPACING)
         self.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.APP_CONTROL_BG))
         
@@ -72,7 +72,7 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         self.name_label.setSizePolicy(self.name_label.sizePolicy().Ignored, self.name_label.sizePolicy().Preferred)
         # Elide text from the middle to keep both start and end visible
         font_metrics = self.name_label.fontMetrics()
-        elided_text = font_metrics.elidedText(self.session['name'], Qt.ElideMiddle, 280)
+        elided_text = font_metrics.elidedText(self.session['name'], Qt.ElideMiddle, UIConstants.TEXT_ELIDE_WIDTH)
         self.name_label.setText(elided_text)
         self.name_label.setToolTip(self.session['name'])  # Show full name on hover
         layout.addWidget(self.name_label)
@@ -82,8 +82,8 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(0)
-        self.slider.setMaximum(100)
-        self.slider.setValue(int(self.session['volume'] * 100))
+        self.slider.setMaximum(UIConstants.VOLUME_PERCENTAGE_FACTOR)
+        self.slider.setValue(int(self.session['volume'] * UIConstants.VOLUME_PERCENTAGE_FACTOR))
         self.slider.setStyleSheet(StyleSheets.get_app_slider_stylesheet())
         self.slider.valueChanged.connect(self.on_slider_changed)
         self.slider.setMinimumWidth(UIConstants.MIN_SLIDER_WIDTH)
@@ -91,7 +91,7 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         self.volume_text = QLineEdit()
         self.volume_text.setFixedWidth(UIConstants.VOLUME_TEXT_WIDTH)
         self.volume_text.setMinimumWidth(UIConstants.VOLUME_TEXT_WIDTH)
-        self.volume_text.setText(str(int(self.session['volume'] * 100)))
+        self.volume_text.setText(str(int(self.session['volume'] * UIConstants.VOLUME_PERCENTAGE_FACTOR)))
         self.volume_text.setStyleSheet(StyleSheets.get_volume_text_stylesheet())
         self.volume_text.setReadOnly(False)
         self.volume_text.returnPressed.connect(self.on_volume_text_changed)
@@ -113,7 +113,7 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         """Handle slider value change"""
         self.handle_volume_slider_change(
             value,
-            lambda vol: self.audio_controller.set_application_volume(self.session['pids'], vol)
+            lambda vol: self.audio_controller.set_application_volume(self.session['pids'], vol / UIConstants.VOLUME_PERCENTAGE_FACTOR)
         )
     
     def on_mute_clicked(self) -> None:

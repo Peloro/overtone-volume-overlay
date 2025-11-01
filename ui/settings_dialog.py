@@ -22,7 +22,7 @@ class SettingsDialog(QDialog):
         from utils import set_window_icon
         self.setWindowTitle("Settings")
         self.setWindowFlags(Qt.Window | Qt.WindowStaysOnTopHint)
-        self.setMinimumWidth(450)
+        self.setMinimumWidth(UIConstants.SETTINGS_MIN_WIDTH)
         set_window_icon(self)
         
         layout = QVBoxLayout()
@@ -269,9 +269,9 @@ class SettingsDialog(QDialog):
     def _create_color_button(self, color: str, callback):
         """Create a color picker button"""
         button = QPushButton()
-        button.setMinimumHeight(30)
-        button.setMinimumWidth(90)
-        button.setStyleSheet("font-size: 8px;")
+        button.setMinimumHeight(UIConstants.COLOR_BUTTON_MIN_HEIGHT)
+        button.setMinimumWidth(UIConstants.COLOR_BUTTON_MIN_WIDTH)
+        button.setStyleSheet(f"font-size: {UIConstants.COLOR_BUTTON_FONT_SIZE}px;")
         button.clicked.connect(callback)
         self._update_color_button(button, color)
         return button
@@ -281,8 +281,8 @@ class SettingsDialog(QDialog):
         try:
             if color.startswith("rgba"):
                 color_str = color.replace("rgba(", "").replace(")", "").replace("{alpha}", "255")
-                r, g, b, a = [int(x.strip()) for x in color_str.split(",")][:4]
-                a = a if len(color_str.split(",")) > 3 else 255
+                r, g, b, a = [int(x.strip()) for x in color_str.split(",")][:UIConstants.RGBA_COMPONENT_COUNT]
+                a = a if len(color_str.split(",")) > UIConstants.RGBA_COMPONENT_COUNT - 1 else 255
                 display_text = f"({r}, {g}, {b}, {a})"
                 bg_css = f"rgba({r}, {g}, {b}, {a})"
             else:

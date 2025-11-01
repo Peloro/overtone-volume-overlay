@@ -62,12 +62,13 @@ class ProfilesManager:
     def save_profiles(self) -> None:
         """Save all profiles to file"""
         try:
+            from .ui_constants import UIConstants
             data = {
                 "profiles": self.profiles,
                 "active_profile": self.active_profile_name
             }
             with open(self.profiles_file, 'w') as f:
-                json.dump(data, f, indent=4)
+                json.dump(data, f, indent=UIConstants.JSON_INDENT)
             logger.debug(f"Profiles saved to {self.profiles_file}")
         except Exception as e:
             logger.error(f"Error saving profiles: {e}", exc_info=True)

@@ -285,4 +285,4 @@ class VolumeOverlayApp:
                     pass
         
         # Use QTimer to delay quit slightly to allow cleanup to complete
-        QTimer.singleShot(100, lambda: QApplication.quit() if QApplication.instance() else sys.exit(0))
+        QTimer.singleShot(UIConstants.QUIT_DELAY_MS, lambda: QApplication.quit() if QApplication.instance() else sys.exit(0))

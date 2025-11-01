@@ -50,6 +50,48 @@ class UIConstants:
     # Minimum control widths
     MIN_CONTROL_WIDTH = 200
     MIN_SLIDER_WIDTH = 80
+    
+    # Volume conversion
+    VOLUME_PERCENTAGE_FACTOR = 100
+    
+    # System tray icon sizes
+    ICON_SIZE_16 = 16
+    ICON_SIZE_24 = 24
+    ICON_SIZE_32 = 32
+    ICON_SIZE_48 = 48
+    FALLBACK_ICON_SIZE = 32
+    
+    # Text eliding
+    TEXT_ELIDE_WIDTH = 280
+    
+    # Application timing
+    QUIT_DELAY_MS = 100
+    RESIZE_DEBOUNCE_MS = 100
+    
+    # Settings
+    SETTINGS_SAVE_DEBOUNCE_MS = 500
+    OPACITY_DECIMAL_PLACES = 2
+    
+    # Logging
+    LOG_MAX_BYTES = 5 * 1024 * 1024  # 5MB
+    LOG_BACKUP_COUNT = 3
+    
+    # Profiles
+    JSON_INDENT = 4
+    
+    # Cache limits
+    MAX_CACHE_SIZE = 100
+    CACHE_CLEANUP_BATCH_SIZE = 20
+    
+    # Layout constants
+    MARGIN_SIDES_COUNT = 4  # top, right, bottom, left
+    RGBA_COMPONENT_COUNT = 4  # red, green, blue, alpha
+    
+    # Settings Dialog
+    SETTINGS_MIN_WIDTH = 450
+    COLOR_BUTTON_MIN_HEIGHT = 30
+    COLOR_BUTTON_MIN_WIDTH = 90
+    COLOR_BUTTON_FONT_SIZE = 8
 
 
 class Hotkeys:

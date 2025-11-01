@@ -11,7 +11,7 @@ import keyboard
 
 from config import SettingsManager, UIConstants, Colors
 from controllers import AudioController
-from ui import VolumeOverlay, SettingsDialog, SystemTrayIcon
+from ui import VolumeOverlay, SystemTrayIcon
 from .hotkey_handler import HotkeyHandler
 from utils.logger import get_logger
 
@@ -39,7 +39,7 @@ class VolumeOverlayApp:
         
         self.overlay = VolumeOverlay(self)
         self.overlay.hide()  # Start hidden to prevent flash on startup
-        self.settings_dialog = SettingsDialog(self)
+        self.settings_dialog = None  # Lazy initialization
         
         self.tray_icon = SystemTrayIcon(self)
         self.tray_icon.show()
@@ -56,6 +56,8 @@ class VolumeOverlayApp:
         
         self.refresh_timer = QTimer()
         self.refresh_timer.timeout.connect(self.refresh_applications)
+        # Set timer to be coalesced for better performance
+        self.refresh_timer.setTimerType(Qt.CoarseTimer)
         
         logger.info("VolumeOverlayApp initialized successfully")
     
@@ -103,10 +105,13 @@ class VolumeOverlayApp:
         
         # Ensure any remaining global keyboard hooks are removed
         try:
-            unhook_func = getattr(keyboard, 'unhook_all_hotkeys', None) or getattr(keyboard, 'unhook_all', None)
-            if unhook_func:
-                unhook_func()
-                logger.debug(f"{unhook_func.__name__}() called")
+            # Try unhook_all first as it's more thorough
+            if hasattr(keyboard, 'unhook_all'):
+                keyboard.unhook_all()
+                logger.debug("keyboard.unhook_all() called")
+            elif hasattr(keyboard, 'unhook_all_hotkeys'):
+                keyboard.unhook_all_hotkeys()
+                logger.debug("keyboard.unhook_all_hotkeys() called")
         except Exception as e:
             logger.debug(f"Error while unhooking keyboard listeners: {e}")
     
@@ -114,19 +119,24 @@ class VolumeOverlayApp:
         """Setup global hotkeys"""
         self._unregister_hotkeys()
         
-        for hotkey, callback in [
+        # Batch hotkey registration for better performance
+        hotkey_configs = [
             (self.settings_manager.hotkey_open, self.hotkey_handler.toggle_signal.emit),
             (self.settings_manager.hotkey_settings, self.hotkey_handler.settings_signal.emit),
             (self.settings_manager.hotkey_quit, self.hotkey_handler.quit_signal.emit),
-        ]:
-            if self._validate_hotkey_format(hotkey):
-                try:
-                    self._registered_hotkeys.append(keyboard.add_hotkey(hotkey, callback, suppress=False))
-                    logger.debug(f"Registered hotkey: {hotkey}")
-                except Exception as e:
-                    logger.error(f"Error registering hotkey '{hotkey}': {e}")
-            else:
+        ]
+        
+        for hotkey, callback in hotkey_configs:
+            if not self._validate_hotkey_format(hotkey):
                 logger.warning(f"Invalid hotkey format: {hotkey}")
+                continue
+                
+            try:
+                hotkey_ref = keyboard.add_hotkey(hotkey, callback, suppress=False)
+                self._registered_hotkeys.append(hotkey_ref)
+                logger.debug(f"Registered hotkey: {hotkey}")
+            except Exception as e:
+                logger.error(f"Error registering hotkey '{hotkey}': {e}")
     
     def toggle_overlay(self) -> None:
         """Toggle overlay visibility"""
@@ -155,6 +165,11 @@ class VolumeOverlayApp:
     
     def show_settings(self) -> None:
         """Show settings dialog"""
+        # Lazy initialization - only create when first shown
+        if self.settings_dialog is None:
+            from ui import SettingsDialog
+            self.settings_dialog = SettingsDialog(self)
+            
         self.settings_dialog.show()
         self.settings_dialog.activateWindow()
         self.settings_dialog.raise_()
@@ -165,8 +180,12 @@ class VolumeOverlayApp:
     
     def update_settings(self) -> None:
         """Update application with new settings"""
+        # Batch updates to reduce repaints
+        self.overlay.setUpdatesEnabled(False)
         self.overlay.resize(self.settings_manager.overlay_width, self.settings_manager.overlay_height)
         self.overlay.update_background_opacity()
+        self.overlay.setUpdatesEnabled(True)
+        
         self.setup_hotkeys()
         self.settings_manager.save_settings()
     
@@ -203,18 +222,67 @@ class VolumeOverlayApp:
     def quit_application(self) -> None:
         """Quit the application"""
         logger.info("Shutting down Overtone application")
-        self.refresh_timer.stop()
-        self._unregister_hotkeys()
         
-        if hasattr(self, 'audio_controller'):
-            self.audio_controller.cleanup()
+        # Stop all timers first
+        if hasattr(self, 'refresh_timer') and self.refresh_timer:
+            self.refresh_timer.stop()
         
-        for widget in (self.tray_icon, self.overlay, self.settings_dialog):
+        # Disconnect hotkey signals to prevent any callbacks during shutdown
+        if hasattr(self, 'hotkey_handler') and self.hotkey_handler:
             try:
-                widget.hide()
-                widget.close()
-                widget.deleteLater()
+                self.hotkey_handler.toggle_signal.disconnect()
+                self.hotkey_handler.settings_signal.disconnect()
+                self.hotkey_handler.quit_signal.disconnect()
             except Exception:
                 pass
         
-        QApplication.quit() if QApplication.instance() else sys.exit(0)
+        # Unregister keyboard hooks BEFORE cleaning up UI
+        self._unregister_hotkeys()
+        
+        # Hide and clean up overlay first (it has controls that reference audio_controller)
+        if hasattr(self, 'overlay') and self.overlay is not None:
+            try:
+                self.overlay.hide()
+                # Clear controls to break references
+                if hasattr(self.overlay, 'clear_all_controls'):
+                    self.overlay.clear_all_controls()
+                self.overlay.close()
+            except Exception as e:
+                logger.debug(f"Error cleaning up overlay: {e}")
+        
+        # Clean up settings dialog
+        if hasattr(self, 'settings_dialog') and self.settings_dialog is not None:
+            try:
+                self.settings_dialog.hide()
+                self.settings_dialog.close()
+            except Exception as e:
+                logger.debug(f"Error cleaning up settings dialog: {e}")
+        
+        # Clean up tray icon
+        if hasattr(self, 'tray_icon') and self.tray_icon is not None:
+            try:
+                if hasattr(self.tray_icon, 'cleanup'):
+                    self.tray_icon.cleanup()
+                else:
+                    self.tray_icon.hide()
+                    self.tray_icon.setContextMenu(None)
+            except Exception as e:
+                logger.debug(f"Error cleaning up tray icon: {e}")
+        
+        # Clean up audio controller (releases COM objects)
+        if hasattr(self, 'audio_controller') and self.audio_controller:
+            try:
+                self.audio_controller.cleanup()
+            except Exception as e:
+                logger.debug(f"Error cleaning up audio controller: {e}")
+        
+        # Schedule widget deletion after event loop processes pending events
+        for widget in (self.tray_icon, self.overlay, self.settings_dialog):
+            if widget is not None:
+                try:
+                    widget.deleteLater()
+                except Exception:
+                    pass
+        
+        # Use QTimer to delay quit slightly to allow cleanup to complete
+        QTimer.singleShot(100, lambda: QApplication.quit() if QApplication.instance() else sys.exit(0))

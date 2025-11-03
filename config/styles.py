@@ -86,16 +86,31 @@ class StyleSheets:
                                border_width: int = 1, margin: int = -4) -> str:
         """Helper to generate slider stylesheet"""
         return f"""
+            QSlider {{
+                height: 20px;
+            }}
             QSlider::groove:horizontal {{
                 border: 1px solid {Colors.SLIDER_GROOVE_BORDER};
-                height: 6px; background: {Colors.SLIDER_GROOVE_BG};
+                height: 6px; 
+                background: {Colors.SLIDER_GROOVE_BG};
+                border-radius: {UIConstants.SLIDER_RADIUS}px;
+                margin: 0px 7px;
+            }}
+            QSlider::sub-page:horizontal {{
+                background: {Colors.SLIDER_GROOVE_BG};
                 border-radius: {UIConstants.SLIDER_RADIUS}px;
             }}
             QSlider::handle:horizontal {{
-                background: {handle_color}; border: {border_width}px solid {border_color};
-                width: 14px; margin: {margin}px 0; border-radius: {UIConstants.HANDLE_RADIUS}px;
+                background: {handle_color}; 
+                border: {border_width}px solid {border_color};
+                width: 14px; 
+                height: 14px;
+                margin: {margin}px -7px; 
+                border-radius: {UIConstants.HANDLE_RADIUS}px;
             }}
-            QSlider::handle:horizontal:hover {{ background: {hover_color}; }}
+            QSlider::handle:horizontal:hover {{ 
+                background: {hover_color}; 
+            }}
         """
     
     @staticmethod

@@ -571,9 +571,12 @@ class SettingsDialog(QDialog):
         )
         
         if reply == QMessageBox.Yes:
+            # Check if we're deleting the active profile BEFORE deletion
+            was_active = profile_name == self.app.settings_manager.get_active_profile_name()
             if self.app.settings_manager.delete_profile(profile_name):
                 self.refresh_profile_list()
-                if profile_name == self.app.settings_manager.get_active_profile_name():
+                if was_active:
+                    # If we deleted the active profile, apply the new active profile (default)
                     self.refresh_overlay_after_profile_switch()
     
     def on_profile_double_clicked(self, item):

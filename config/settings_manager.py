@@ -194,9 +194,11 @@ class SettingsManager:
     
     def delete_profile(self, profile_name: str) -> bool:
         """Delete a profile"""
+        # Check if we're deleting the active profile BEFORE the deletion
+        was_active = profile_name == self.profiles_manager.get_active_profile_name()
         result = self.profiles_manager.delete_profile(profile_name)
-        if result and profile_name == self.profiles_manager.get_active_profile_name():
-            # If we deleted the active profile, reload settings
+        if result and was_active:
+            # If we deleted the active profile, reload settings from the new active profile
             self.load_settings()
         return result
     

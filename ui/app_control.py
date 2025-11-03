@@ -87,6 +87,7 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         self.slider.setStyleSheet(StyleSheets.get_app_slider_stylesheet())
         self.slider.valueChanged.connect(self.on_slider_changed)
         self.slider.setMinimumWidth(UIConstants.MIN_SLIDER_WIDTH)
+        self.slider.setContentsMargins(0, 0, 0, 0)
         
         self.volume_text = QLineEdit()
         self.volume_text.setFixedWidth(UIConstants.VOLUME_TEXT_WIDTH)

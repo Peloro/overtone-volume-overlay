@@ -38,7 +38,7 @@ class UIConstants:
     LAYOUT_SPACING = 5
     FRAME_MARGIN = 5
     FRAME_SPACING = 3
-    CONTROL_SPACING = 3
+    CONTROL_SPACING = 5
     
     WINDOW_RADIUS = 10
     FRAME_RADIUS = 5

@@ -92,6 +92,12 @@ class UIConstants:
     COLOR_BUTTON_MIN_HEIGHT = 30
     COLOR_BUTTON_MIN_WIDTH = 90
     COLOR_BUTTON_FONT_SIZE = 8
+    
+    # UI Interaction
+    WHEEL_SCROLL_DELTA = 5  # Volume change per mouse wheel tick
+    PAGINATION_LABEL_PADDING_H = 10  # Horizontal padding for page label
+    FILTER_INPUT_PADDING_V = 5  # Vertical padding for filter input
+    FILTER_INPUT_PADDING_H = 8  # Horizontal padding for filter input
 
 
 class Hotkeys:

@@ -4,12 +4,15 @@ Handles getting and setting volume for individual applications.
 Optimizations:
 - Cache expensive display-name lookups per PID and exe path
 - Maintain a PID->session cache for faster volume/mute updates
+- Use functools.lru_cache for memoization
 """
 from ctypes import POINTER, cast
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, TypeAlias
+from functools import lru_cache
 from time import time
+import atexit
 import win32gui
 import win32process
 import win32api
@@ -20,17 +23,26 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+# Type aliases for better readability
+SessionDict: TypeAlias = Dict[str, Any]
+PIDList: TypeAlias = List[int]
+CacheDict: TypeAlias = Dict[int, str]
+
 
 class AudioController:
     """Audio controller with caching optimizations"""
     # Constants
     _EXE_EXTENSION = '.exe'
     _EXE_EXTENSION_LENGTH = 4  # Length of ".exe"
+    
     def __init__(self) -> None:
+        # Flag to track if cleanup has been called
+        self._cleaned_up = False
+        
         self._get_master_volume_interface()
+        
         # Cache for display names by PID and exe path to avoid repeated expensive calls
-        self._display_name_cache: Dict[int, str] = {}
-        self._file_desc_cache: Dict[str, str] = {}
+        self._display_name_cache: CacheDict = {}
         # Cache for quick PID to session mapping; refreshed on each get_audio_sessions call
         self._pid_to_session: Dict[int, Any] = {}
         # Optional TTL in seconds for window-title based names in case titles change
@@ -42,6 +54,9 @@ class AudioController:
         self._window_title_cache: Dict[int, Optional[str]] = {}
         # Maximum cache sizes to prevent memory bloat
         self._max_cache_size = UIConstants.MAX_CACHE_SIZE
+        
+        # Register cleanup on exit to ensure proper COM cleanup
+        atexit.register(self._safe_cleanup)
     
     def _get_master_volume_interface(self) -> None:
         """Get the master volume interface"""
@@ -92,10 +107,10 @@ class AudioController:
             logger.error(f"Error setting master mute: {e}")
         return False
     
-    def _get_file_description(self, exe_path: str) -> Optional[str]:
-        """Get the file description from executable metadata"""
-        if cached := self._file_desc_cache.get(exe_path):
-            return cached
+    @staticmethod
+    @lru_cache(maxsize=128)
+    def _get_file_description(exe_path: str) -> Optional[str]:
+        """Get the file description from executable metadata (cached with LRU)"""
         try:
             language, codepage = win32api.GetFileVersionInfo(exe_path, '\\VarFileInfo\\Translation')[0]
             string_file_info = f'\\StringFileInfo\\{language:04X}{codepage:04X}\\'
@@ -103,8 +118,7 @@ class AudioController:
             for key in ('FileDescription', 'ProductName'):
                 desc = win32api.GetFileVersionInfo(exe_path, string_file_info + key)
                 if desc:
-                    self._file_desc_cache[exe_path] = desc.strip()
-                    return self._file_desc_cache[exe_path]
+                    return desc.strip()
         except Exception:
             pass
         return None
@@ -196,14 +210,14 @@ class AudioController:
         self._name_timestamps[pid] = now
         return display_name
     
-    def get_audio_sessions(self) -> List[Dict[str, Any]]:
+    def get_audio_sessions(self) -> List[SessionDict]:
         """Get all active audio sessions, grouped by display name"""
-        sessions: List[Dict[str, Any]] = []
+        sessions: List[SessionDict] = []
         # Reset PID map each refresh
         self._pid_to_session.clear()
         
         # Temporary dict to group sessions by name
-        grouped_sessions: Dict[str, Dict[str, Any]] = {}
+        grouped_sessions: Dict[str, SessionDict] = {}
         
         try:
             audio_sessions = AudioUtilities.GetAllSessions()
@@ -256,6 +270,21 @@ class AudioController:
             logger.error(f"Error getting audio sessions: {e}", exc_info=True)
         
         return sessions
+    
+    @staticmethod
+    def sessions_have_changed(old_sessions: List[SessionDict], new_sessions: List[SessionDict]) -> bool:
+        """
+        Check if sessions have meaningfully changed.
+        Compares session names and PIDs to detect changes.
+        """
+        if len(old_sessions) != len(new_sessions):
+            return True
+        
+        # Compare session names and PIDs as a quick check
+        old_set = {(s['name'], tuple(s['pids'])) for s in old_sessions}
+        new_set = {(s['name'], tuple(s['pids'])) for s in new_sessions}
+        
+        return old_set != new_set
     
     def _get_or_refresh_session(self, pid: int):
         """Get session from cache or refresh from audio sessions"""
@@ -315,38 +344,66 @@ class AudioController:
             logger.error(f"Error setting mute: {e}")
             return False
     
+    def _safe_cleanup(self) -> None:
+        """Safe cleanup for atexit registration"""
+        try:
+            if not self._cleaned_up:
+                self.cleanup()
+        except Exception:
+            pass  # Suppress all errors during atexit cleanup
+    
     def cleanup(self) -> None:
         """Clean up resources"""
+        if self._cleaned_up:
+            return  # Prevent double cleanup
+        
         logger.debug("Starting audio controller cleanup")
         
-        # Clear all session references first
-        self._pid_to_session.clear()
-        
-        # Clear caches
-        self._display_name_cache.clear()
-        self._file_desc_cache.clear()
-        self._name_timestamps.clear()
-        self._pid_to_exe_cache.clear()
-        self._window_title_cache.clear()
-        
-        # Release master volume interface
-        if self.master_volume is not None:
-            try:
-                # Release the COM object reference
-                self.master_volume.Release()
-                logger.debug("Released master volume COM interface")
-            except Exception as e:
-                logger.debug(f"Error releasing master volume interface: {e}")
-            finally:
-                self.master_volume = None
-        
-        # Allow COM to clean up - but don't call CoUninitialize as it may be 
-        # shared with other parts of the app or cause issues during shutdown
         try:
-            import gc
-            gc.collect()  # Force garbage collection to clean up COM references
-            logger.debug("Forced garbage collection for COM cleanup")
+            # Clear all session references first
+            self._pid_to_session.clear()
+            
+            # Clear caches
+            self._display_name_cache.clear()
+            self._name_timestamps.clear()
+            self._pid_to_exe_cache.clear()
+            self._window_title_cache.clear()
+            
+            # Clear LRU cache
+            try:
+                self._get_file_description.cache_clear()
+            except Exception as e:
+                logger.debug(f"Error clearing LRU cache: {e}")
+            
+            # Release master volume interface safely
+            if hasattr(self, 'master_volume') and self.master_volume is not None:
+                try:
+                    # Don't manually call Release() - let Python's COM wrapper handle it
+                    # Just set to None and let garbage collection clean it up
+                    self.master_volume = None
+                    logger.debug("Master volume interface cleared")
+                except Exception as e:
+                    logger.debug(f"Error clearing master volume interface: {e}")
+            
+            # Force garbage collection to clean up COM references
+            try:
+                import gc
+                gc.collect()
+                logger.debug("Forced garbage collection for COM cleanup")
+            except Exception as e:
+                logger.debug(f"Error during garbage collection: {e}")
+            
+            self._cleaned_up = True
+            logger.debug("Audio controller cleanup completed")
+            
         except Exception as e:
-            logger.debug(f"Error during garbage collection: {e}")
-        
-        logger.debug("Audio controller cleanup completed")
+            logger.error(f"Error during cleanup: {e}", exc_info=True)
+            self._cleaned_up = True  # Mark as cleaned up even if error occurred
+    
+    def __del__(self):
+        """Destructor to ensure cleanup is called"""
+        try:
+            if not getattr(self, '_cleaned_up', False):
+                self._safe_cleanup()
+        except Exception:
+            pass  # Suppress all errors in destructor

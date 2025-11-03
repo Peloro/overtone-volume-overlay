@@ -14,6 +14,7 @@ from controllers import AudioController
 from ui import VolumeOverlay, SystemTrayIcon
 from .hotkey_handler import HotkeyHandler
 from utils.logger import get_logger
+from utils import batch_update
 
 logger = get_logger(__name__)
 
@@ -180,11 +181,10 @@ class VolumeOverlayApp:
     
     def update_settings(self) -> None:
         """Update application with new settings"""
-        # Batch updates to reduce repaints
-        self.overlay.setUpdatesEnabled(False)
-        self.overlay.resize(self.settings_manager.overlay_width, self.settings_manager.overlay_height)
-        self.overlay.update_background_opacity()
-        self.overlay.setUpdatesEnabled(True)
+        # Use context manager for batch updates to reduce repaints
+        with batch_update(self.overlay):
+            self.overlay.resize(self.settings_manager.overlay_width, self.settings_manager.overlay_height)
+            self.overlay.update_background_opacity()
         
         self.setup_hotkeys()
         self.settings_manager.save_settings()

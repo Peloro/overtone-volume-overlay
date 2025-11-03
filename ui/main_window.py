@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtCore import Qt, QPoint, QTimer
 
 from config import UIConstants, Colors, StyleSheets
-from utils import create_standard_button
+from utils import create_standard_button, batch_update
 from .app_control import AppVolumeControl
 from .master_control import MasterVolumeControl
 
@@ -264,20 +264,9 @@ class VolumeOverlay(QWidget):
         new_sessions = self.app.audio_controller.get_audio_sessions()
         
         # Only update if sessions have actually changed (reduce unnecessary UI updates)
-        if self._sessions_differ(self.all_sessions, new_sessions):
+        if self.app.audio_controller.sessions_have_changed(self.all_sessions, new_sessions):
             self.all_sessions = new_sessions
             self.apply_filter()
-    
-    def _sessions_differ(self, old_sessions: List[Dict[str, Any]], new_sessions: List[Dict[str, Any]]) -> bool:
-        """Check if sessions have meaningfully changed"""
-        if len(old_sessions) != len(new_sessions):
-            return True
-        
-        # Compare session names and PIDs as a quick check
-        old_set = {(s['name'], tuple(s['pids'])) for s in old_sessions}
-        new_set = {(s['name'], tuple(s['pids'])) for s in new_sessions}
-        
-        return old_set != new_set
     
     def get_apps_per_page(self) -> int:
         """Calculate how many apps can fit in current window height"""
@@ -357,38 +346,34 @@ class VolumeOverlay(QWidget):
         
         page_sessions = self.filtered_sessions[start_idx:start_idx + apps_per_page]
         
-        # Disable updates during batch operations for better performance
-        self.setUpdatesEnabled(False)
-        self._update_controls_for_sessions(page_sessions)
-        self._update_pagination_ui(current_page, total_pages)
-        self.setUpdatesEnabled(True)
+        # Use context manager for batch operations for better performance
+        with batch_update(self):
+            self._update_controls_for_sessions(page_sessions)
+            self._update_pagination_ui(current_page, total_pages)
     
     def clear_all_controls(self) -> None:
         """Clear all app controls from layout"""
-        # Stop any updates during cleanup
-        self.setUpdatesEnabled(False)
-        
-        # Clear app controls first
-        for name, widget in list(self.app_controls.items()):
-            try:
-                self.container_layout.removeWidget(widget)
-                widget.setParent(None)
-                widget.deleteLater()
-            except Exception:
-                pass
-        self.app_controls.clear()
-        
-        # Clear any remaining widgets in layout (excluding the stretch item)
-        while self.container_layout.count() > 1:
-            item = self.container_layout.takeAt(0)
-            if item and (widget := item.widget()):
+        # Use context manager for batch operations
+        with batch_update(self):
+            # Clear app controls first
+            for name, widget in list(self.app_controls.items()):
                 try:
+                    self.container_layout.removeWidget(widget)
                     widget.setParent(None)
                     widget.deleteLater()
                 except Exception:
                     pass
-        
-        self.setUpdatesEnabled(True)
+            self.app_controls.clear()
+            
+            # Clear any remaining widgets in layout (excluding the stretch item)
+            while self.container_layout.count() > 1:
+                item = self.container_layout.takeAt(0)
+                if item and (widget := item.widget()):
+                    try:
+                        widget.setParent(None)
+                        widget.deleteLater()
+                    except Exception:
+                        pass
     
     def previous_page(self) -> None:
         """Go to previous page"""

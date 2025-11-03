@@ -67,7 +67,7 @@ class BaseVolumeControl(QWidget):
             event.ignore()
             return
         
-        delta = 5 if event.angleDelta().y() > 0 else -5
+        delta = UIConstants.WHEEL_SCROLL_DELTA if event.angleDelta().y() > 0 else -UIConstants.WHEEL_SCROLL_DELTA
         new_volume = max(0, min(UIConstants.VOLUME_PERCENTAGE_FACTOR, self.slider.value() + delta))
         self.slider.setValue(new_volume)
         event.accept()

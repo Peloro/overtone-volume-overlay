@@ -1,9 +1,29 @@
 """UI Utilities for common widget operations"""
 import os
 from typing import Callable
-from PyQt5.QtWidgets import QPushButton
+from contextlib import contextmanager
+from PyQt5.QtWidgets import QPushButton, QWidget
 from PyQt5.QtGui import QIcon
 from config import UIConstants, AppInfo
+
+
+@contextmanager
+def batch_update(widget: QWidget):
+    """
+    Context manager for batch UI updates.
+    Disables widget updates during context, then re-enables them.
+    This reduces repaints and improves performance for multiple UI changes.
+    
+    Example:
+        with batch_update(self):
+            self.update_control_1()
+            self.update_control_2()
+    """
+    widget.setUpdatesEnabled(False)
+    try:
+        yield widget
+    finally:
+        widget.setUpdatesEnabled(True)
 
 
 def create_button(text: str, callback: Callable, tooltip: str = "", stylesheet: str = "",

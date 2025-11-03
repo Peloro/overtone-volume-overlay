@@ -195,7 +195,7 @@ class StyleSheets:
             QLabel {{
                 color: {Colors.TEXT_LIGHT_GRAY};
                 font-size: {UIConstants.LABEL_FONT_SIZE}px;
-                padding: 0px 10px;
+                padding: 0px {UIConstants.PAGINATION_LABEL_PADDING_H}px;
             }}
         """
     
@@ -206,7 +206,7 @@ class StyleSheets:
                 background-color: {Colors.INPUT_BG};
                 border: 1px solid {Colors.BORDER_COLOR};
                 border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
-                padding: 5px 8px;
+                padding: {UIConstants.FILTER_INPUT_PADDING_V}px {UIConstants.FILTER_INPUT_PADDING_H}px;
                 color: {Colors.TEXT_WHITE};
                 font-size: {UIConstants.LABEL_FONT_SIZE}px;
             }}

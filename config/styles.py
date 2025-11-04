@@ -49,7 +49,7 @@ class StyleSheets:
                 color: {Colors.TEXT_WHITE};
                 font-size: {UIConstants.LABEL_FONT_SIZE}px;
                 font-weight: bold;
-                padding: 2px;
+                padding: {UIConstants.SMALL_PADDING}px;
             }}
         """
     
@@ -83,18 +83,23 @@ class StyleSheets:
     
     @staticmethod
     def _get_slider_stylesheet(handle_color: str, border_color: str, hover_color: str, 
-                               border_width: int = 1, margin: int = -4) -> str:
+                               border_width: int = None, margin: int = None) -> str:
         """Helper to generate slider stylesheet"""
+        if border_width is None:
+            border_width = UIConstants.APP_SLIDER_BORDER_WIDTH
+        if margin is None:
+            margin = UIConstants.APP_SLIDER_MARGIN
+            
         return f"""
             QSlider {{
-                height: 20px;
+                height: {UIConstants.SLIDER_HEIGHT}px;
             }}
             QSlider::groove:horizontal {{
-                border: 1px solid {Colors.SLIDER_GROOVE_BORDER};
-                height: 6px; 
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid {Colors.SLIDER_GROOVE_BORDER};
+                height: {UIConstants.SLIDER_GROOVE_HEIGHT}px; 
                 background: {Colors.SLIDER_GROOVE_BG};
                 border-radius: {UIConstants.SLIDER_RADIUS}px;
-                margin: 0px 7px;
+                margin: {UIConstants.SLIDER_GROOVE_MARGIN_ZERO}px {UIConstants.SLIDER_GROOVE_MARGIN}px;
             }}
             QSlider::sub-page:horizontal {{
                 background: {Colors.SLIDER_GROOVE_BG};
@@ -103,9 +108,9 @@ class StyleSheets:
             QSlider::handle:horizontal {{
                 background: {handle_color}; 
                 border: {border_width}px solid {border_color};
-                width: 14px; 
-                height: 14px;
-                margin: {margin}px -7px; 
+                width: {UIConstants.SLIDER_HANDLE_WIDTH}px; 
+                height: {UIConstants.SLIDER_HANDLE_HEIGHT}px;
+                margin: {margin}px {UIConstants.SLIDER_HANDLE_MARGIN_OFFSET}px; 
                 border-radius: {UIConstants.HANDLE_RADIUS}px;
             }}
             QSlider::handle:horizontal:hover {{ 
@@ -116,12 +121,16 @@ class StyleSheets:
     @staticmethod
     def get_master_slider_stylesheet() -> str:
         return StyleSheets._get_slider_stylesheet(Colors.MASTER_SLIDER_HANDLE, Colors.MASTER_SLIDER_HANDLE_BORDER, 
-                                                   Colors.MASTER_SLIDER_HANDLE_HOVER, 2, -5)
+                                                   Colors.MASTER_SLIDER_HANDLE_HOVER, 
+                                                   UIConstants.MASTER_SLIDER_BORDER_WIDTH, 
+                                                   UIConstants.MASTER_SLIDER_MARGIN)
     
     @staticmethod
     def get_app_slider_stylesheet() -> str:
         return StyleSheets._get_slider_stylesheet(Colors.APP_SLIDER_HANDLE, Colors.APP_SLIDER_HANDLE_BORDER, 
-                                                   Colors.APP_SLIDER_HANDLE_HOVER)
+                                                   Colors.APP_SLIDER_HANDLE_HOVER,
+                                                   UIConstants.APP_SLIDER_BORDER_WIDTH,
+                                                   UIConstants.APP_SLIDER_MARGIN)
     
     @staticmethod
     def get_volume_text_stylesheet(border_color: str = None) -> str:
@@ -130,9 +139,9 @@ class StyleSheets:
         return f"""
             QLineEdit {{
                 background-color: {Colors.INPUT_BG};
-                border: 1px solid {border_color};
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid {border_color};
                 border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
-                padding: 3px;
+                padding: {UIConstants.STANDARD_PADDING}px;
                 color: {Colors.TEXT_WHITE};
                 font-size: {UIConstants.LABEL_FONT_SIZE}px;
             }}
@@ -143,9 +152,9 @@ class StyleSheets:
         return f"""
             QLineEdit {{
                 background-color: {Colors.DARK_INPUT_BG};
-                border: 1px solid {Colors.MASTER_SLIDER_HANDLE};
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid {Colors.MASTER_SLIDER_HANDLE};
                 border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
-                padding: 3px;
+                padding: {UIConstants.STANDARD_PADDING}px;
                 color: {Colors.TEXT_WHITE};
                 font-weight: bold;
                 font-size: {UIConstants.LABEL_FONT_SIZE}px;
@@ -157,11 +166,12 @@ class StyleSheets:
         bg_color = Colors.DARK_INPUT_BG if is_master else Colors.SECONDARY_BUTTON_BG
         border_color = Colors.MASTER_SLIDER_HANDLE if is_master else Colors.BORDER_COLOR
         hover_color = Colors.MASTER_SLIDER_HANDLE if is_master else Colors.SECONDARY_BUTTON_HOVER
+        border_width = UIConstants.THICK_BORDER_WIDTH if is_master else UIConstants.STANDARD_BORDER_WIDTH
         
         return f"""
             QPushButton {{
                 background-color: {bg_color};
-                border: {"2px" if is_master else "1px"} solid {border_color};
+                border: {border_width}px solid {border_color};
                 border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
                 font-size: {UIConstants.ICON_FONT_SIZE}px;
             }}
@@ -175,7 +185,7 @@ class StyleSheets:
         return f"""
             QPushButton {{
                 background-color: {Colors.APP_CONTROL_BG};
-                border: 1px solid {Colors.PRIMARY_BUTTON_BG};
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid {Colors.PRIMARY_BUTTON_BG};
                 border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
                 font-size: {UIConstants.ICON_FONT_SIZE}px;
                 color: {Colors.TEXT_WHITE};
@@ -204,14 +214,14 @@ class StyleSheets:
         return f"""
             QLineEdit {{
                 background-color: {Colors.INPUT_BG};
-                border: 1px solid {Colors.BORDER_COLOR};
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid {Colors.BORDER_COLOR};
                 border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
                 padding: {UIConstants.FILTER_INPUT_PADDING_V}px {UIConstants.FILTER_INPUT_PADDING_H}px;
                 color: {Colors.TEXT_WHITE};
                 font-size: {UIConstants.LABEL_FONT_SIZE}px;
             }}
             QLineEdit:focus {{
-                border: 1px solid {Colors.PRIMARY_BUTTON_BG};
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid {Colors.PRIMARY_BUTTON_BG};
             }}
             QLineEdit::placeholder {{
                 color: {Colors.TEXT_GRAY};
@@ -223,9 +233,9 @@ class StyleSheets:
         return f"""
             QPushButton {{
                 background-color: {Colors.SECONDARY_BUTTON_BG};
-                border: 1px solid {Colors.BORDER_COLOR};
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid {Colors.BORDER_COLOR};
                 border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
-                font-size: 16px;
+                font-size: {UIConstants.CLEAR_BUTTON_FONT_SIZE}px;
                 font-weight: bold;
                 color: {Colors.TEXT_LIGHT_GRAY};
             }}

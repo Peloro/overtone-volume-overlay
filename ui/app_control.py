@@ -66,7 +66,7 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         
         self.name_label = QLabel(self.session['name'])
         self.name_label.setStyleSheet(StyleSheets.get_label_stylesheet())
-        self.name_label.setMinimumWidth(0)  # Allow text to be elided
+        self.name_label.setMinimumWidth(UIConstants.STRETCH_FACTOR_NONE)  # Allow text to be elided
         self.name_label.setWordWrap(False)  # Prevent wrapping
         self.name_label.setTextFormat(Qt.PlainText)  # Use plain text
         self.name_label.setSizePolicy(self.name_label.sizePolicy().Ignored, self.name_label.sizePolicy().Preferred)
@@ -87,7 +87,8 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         self.slider.setStyleSheet(StyleSheets.get_app_slider_stylesheet())
         self.slider.valueChanged.connect(self.on_slider_changed)
         self.slider.setMinimumWidth(UIConstants.MIN_SLIDER_WIDTH)
-        self.slider.setContentsMargins(0, 0, 0, 0)
+        self.slider.setContentsMargins(UIConstants.STRETCH_FACTOR_NONE, UIConstants.STRETCH_FACTOR_NONE, 
+                                       UIConstants.STRETCH_FACTOR_NONE, UIConstants.STRETCH_FACTOR_NONE)
         
         self.volume_text = QLineEdit()
         self.volume_text.setFixedWidth(UIConstants.VOLUME_TEXT_WIDTH)
@@ -105,9 +106,9 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         self.mute_button.setStyleSheet(StyleSheets.get_mute_button_stylesheet(is_master=False))
         self.mute_button.clicked.connect(self.on_mute_clicked)
         
-        control_layout.addWidget(self.slider, 1)  # Give slider stretch factor
-        control_layout.addWidget(self.volume_text, 0)
-        control_layout.addWidget(self.mute_button, 0)
+        control_layout.addWidget(self.slider, UIConstants.STRETCH_FACTOR_STANDARD)  # Give slider stretch factor
+        control_layout.addWidget(self.volume_text, UIConstants.STRETCH_FACTOR_NONE)
+        control_layout.addWidget(self.mute_button, UIConstants.STRETCH_FACTOR_NONE)
         layout.addLayout(control_layout)
     
     def on_slider_changed(self, value: int) -> None:

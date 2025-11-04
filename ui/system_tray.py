@@ -2,7 +2,6 @@
 System Tray Icon and Menu
 """
 import os
-import sys
 from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QAction
 from PyQt5.QtGui import QIcon, QPixmap, QPainter, QColor, QPolygon
 from PyQt5.QtCore import Qt, QPoint
@@ -50,8 +49,8 @@ class SystemTrayIcon(QSystemTrayIcon):
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         assets_dir = os.path.join(base_dir, 'assets')
         
-        is_windows = sys.platform.startswith('win')
-        icon_files = ['icon2_black.ico', 'icon2.png'] if is_windows else ['icon2.png', 'icon2_black.ico']
+        # Try ICO first (best for Windows), then PNG
+        icon_files = ['icon2_black.ico', 'icon2.png']
 
         for icon_file in icon_files:
             icon_path = os.path.join(assets_dir, icon_file)
@@ -59,8 +58,8 @@ class SystemTrayIcon(QSystemTrayIcon):
             if not os.path.exists(icon_path):
                 continue
 
-            # Try ICO on Windows - most efficient option
-            if icon_file.endswith('.ico') and is_windows:
+            # Try ICO - most efficient option
+            if icon_file.endswith('.ico'):
                 if not (icon := QIcon(icon_path)).isNull():
                     logger.info(f"Loaded tray icon from ICO: {icon_path}")
                     return icon
@@ -70,7 +69,7 @@ class SystemTrayIcon(QSystemTrayIcon):
             if (original := QPixmap(icon_path)).isNull():
                 continue
             
-            if icon_file.endswith('.png') and not original.hasAlphaChannel():
+            if not original.hasAlphaChannel():
                 continue
 
             # Generate only common sizes to reduce memory usage

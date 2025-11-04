@@ -49,7 +49,7 @@ class VolumeOverlay(QWidget):
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.resize(self.app.settings_manager.overlay_width, self.app.settings_manager.overlay_height)
-        self.move(0, 0)
+        self.move(UIConstants.WINDOW_START_X, UIConstants.WINDOW_START_Y)
         self.setMinimumSize(UIConstants.MIN_OVERLAY_WIDTH, UIConstants.MIN_OVERLAY_HEIGHT)
         self.setMaximumSize(UIConstants.MAX_OVERLAY_WIDTH, UIConstants.MAX_OVERLAY_HEIGHT)
         
@@ -78,7 +78,7 @@ class VolumeOverlay(QWidget):
         self.container_layout.setContentsMargins(*[UIConstants.FRAME_MARGIN] * UIConstants.MARGIN_SIDES_COUNT)
         self.container_layout.setSpacing(UIConstants.FRAME_SPACING)
         # Add stretch at the bottom to push all controls to the top
-        self.container_layout.addStretch(1)
+        self.container_layout.addStretch(UIConstants.STRETCH_FACTOR_STANDARD)
         self.container.setStyleSheet(StyleSheets.get_frame_stylesheet())
         
         main_layout.addWidget(self.container, 1)
@@ -97,7 +97,8 @@ class VolumeOverlay(QWidget):
         title_bar = QFrame()
         title_bar.setCursor(Qt.SizeAllCursor)
         title_layout = QHBoxLayout(title_bar)
-        title_layout.setContentsMargins(UIConstants.FRAME_MARGIN, 0, UIConstants.FRAME_MARGIN, 0)
+        title_layout.setContentsMargins(UIConstants.FRAME_MARGIN, UIConstants.STRETCH_FACTOR_NONE, 
+                                       UIConstants.FRAME_MARGIN, UIConstants.STRETCH_FACTOR_NONE)
 
         self.title_label = QLabel("Overtone")
         self.title_label.setStyleSheet(StyleSheets.get_title_label_stylesheet())
@@ -366,7 +367,7 @@ class VolumeOverlay(QWidget):
             self.app_controls.clear()
             
             # Clear any remaining widgets in layout (excluding the stretch item)
-            while self.container_layout.count() > 1:
+            while self.container_layout.count() > UIConstants.STRETCH_FACTOR_STANDARD:
                 item = self.container_layout.takeAt(0)
                 if item and (widget := item.widget()):
                     try:

@@ -22,7 +22,7 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
     def init_ui(self):
         """Initialize the master volume control UI"""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*[UIConstants.FRAME_MARGIN] * 4)
+        layout.setContentsMargins(*[UIConstants.FRAME_MARGIN] * UIConstants.MARGIN_SIDES_COUNT)
         layout.setSpacing(UIConstants.CONTROL_SPACING)
         
         # Set minimum size to prevent deformation
@@ -33,7 +33,7 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         
         self.master_label = QLabel("System Volume")
         self.master_label.setStyleSheet(StyleSheets.get_label_stylesheet())
-        self.master_label.setMinimumWidth(0)  # Allow text to be elided
+        self.master_label.setMinimumWidth(UIConstants.STRETCH_FACTOR_NONE)  # Allow text to be elided
         layout.addWidget(self.master_label)
         
         master_control_layout = QHBoxLayout()
@@ -46,7 +46,8 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         self.slider.setStyleSheet(StyleSheets.get_master_slider_stylesheet())
         self.slider.valueChanged.connect(self.on_volume_changed)
         self.slider.setMinimumWidth(UIConstants.MIN_SLIDER_WIDTH)
-        self.slider.setContentsMargins(0, 0, 0, 0)
+        self.slider.setContentsMargins(UIConstants.STRETCH_FACTOR_NONE, UIConstants.STRETCH_FACTOR_NONE, 
+                                       UIConstants.STRETCH_FACTOR_NONE, UIConstants.STRETCH_FACTOR_NONE)
 
         self.volume_text = QLineEdit()
         self.volume_text.setFixedWidth(UIConstants.VOLUME_TEXT_WIDTH)
@@ -63,9 +64,9 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         self.mute_button.setStyleSheet(StyleSheets.get_mute_button_stylesheet(is_master=True))
         self.mute_button.clicked.connect(self.on_mute_clicked)
         
-        master_control_layout.addWidget(self.slider, 1)  # Give slider stretch factor
-        master_control_layout.addWidget(self.volume_text, 0)
-        master_control_layout.addWidget(self.mute_button, 0)
+        master_control_layout.addWidget(self.slider, UIConstants.STRETCH_FACTOR_STANDARD)  # Give slider stretch factor
+        master_control_layout.addWidget(self.volume_text, UIConstants.STRETCH_FACTOR_NONE)
+        master_control_layout.addWidget(self.mute_button, UIConstants.STRETCH_FACTOR_NONE)
         layout.addLayout(master_control_layout)
         
         self.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.MASTER_FRAME_BG))

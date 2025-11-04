@@ -1,12 +1,11 @@
 """
 Settings Dialog for configuring the application
 """
-import os
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QSpinBox, QDoubleSpinBox, QLineEdit,
                              QGroupBox, QFormLayout, QCheckBox, QTabWidget, QWidget, QColorDialog)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon, QColor
+from PyQt5.QtGui import QColor
 from config import UIConstants, AppInfo
 
 
@@ -97,8 +96,8 @@ class SettingsDialog(QDialog):
         # Appearance group
         self.opacity_spin = QDoubleSpinBox()
         self.opacity_spin.setRange(UIConstants.MIN_OPACITY, UIConstants.MAX_OPACITY)
-        self.opacity_spin.setSingleStep(0.05)
-        self.opacity_spin.setDecimals(2)
+        self.opacity_spin.setSingleStep(UIConstants.OPACITY_STEP)
+        self.opacity_spin.setDecimals(UIConstants.OPACITY_DECIMAL_PLACES)
         self.opacity_spin.setValue(self.app.settings_manager.overlay_opacity)
         self.opacity_spin.valueChanged.connect(self.on_opacity_changed)
         
@@ -135,10 +134,10 @@ class SettingsDialog(QDialog):
             edit.textChanged.connect(self.on_hotkey_changed)
         
         hotkey_info = QLabel("Format: ctrl+shift+key, alt+key, etc.")
-        hotkey_info.setStyleSheet("color: gray; font-size: 10px;")
+        hotkey_info.setStyleSheet(f"color: gray; font-size: {UIConstants.SETTINGS_INFO_FONT_SIZE}px;")
         
         hotkey_warning = QLabel("Note: Changes apply immediately")
-        hotkey_warning.setStyleSheet("color: #42a5f5; font-size: 10px; font-style: italic;")
+        hotkey_warning.setStyleSheet(f"color: #42a5f5; font-size: {UIConstants.SETTINGS_INFO_FONT_SIZE}px; font-style: italic;")
         
         hotkey_group = self._create_group_with_form("Hotkeys", [
             ("Open Overlay:", self.hotkey_open_edit),
@@ -280,9 +279,9 @@ class SettingsDialog(QDialog):
         """Update button appearance to show the color"""
         try:
             if color.startswith("rgba"):
-                color_str = color.replace("rgba(", "").replace(")", "").replace("{alpha}", "255")
+                color_str = color.replace("rgba(", "").replace(")", "").replace("{alpha}", str(UIConstants.ALPHA_CHANNEL_MAX))
                 r, g, b, a = [int(x.strip()) for x in color_str.split(",")][:UIConstants.RGBA_COMPONENT_COUNT]
-                a = a if len(color_str.split(",")) > UIConstants.RGBA_COMPONENT_COUNT - 1 else 255
+                a = a if len(color_str.split(",")) > UIConstants.RGBA_COMPONENT_COUNT - 1 else UIConstants.ALPHA_CHANNEL_MAX
                 display_text = f"({r}, {g}, {b}, {a})"
                 bg_css = f"rgba({r}, {g}, {b}, {a})"
             else:
@@ -291,10 +290,10 @@ class SettingsDialog(QDialog):
                 display_text = f"({r}, {g}, {b}, {a})"
                 bg_css = q.name()
 
-            button.setStyleSheet(f"QPushButton {{ background-color: {bg_css}; color: white; border: 2px solid #666; border-radius: 3px; }}")
+            button.setStyleSheet(f"QPushButton {{ background-color: {bg_css}; color: white; border: {UIConstants.THICK_BORDER_WIDTH}px solid #666; border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px; }}")
             button.setText(display_text)
         except Exception:
-            button.setStyleSheet(f"QPushButton {{ background-color: {color}; color: white; border: 2px solid #666; border-radius: 3px; }}")
+            button.setStyleSheet(f"QPushButton {{ background-color: {color}; color: white; border: {UIConstants.THICK_BORDER_WIDTH}px solid #666; border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px; }}")
             button.setText(str(color))
     
     def _pick_color(self, setting_key: str, button: QPushButton, title: str):
@@ -303,7 +302,7 @@ class SettingsDialog(QDialog):
         
         # Parse current color
         if current_color.startswith("rgba"):
-            color_str = current_color.replace("rgba(", "").replace(")", "").replace("{alpha}", "255")
+            color_str = current_color.replace("rgba(", "").replace(")", "").replace("{alpha}", str(UIConstants.ALPHA_CHANNEL_MAX))
             parts = [int(x.strip()) for x in color_str.split(",")]
             initial_color = QColor(parts[0], parts[1], parts[2])
         else:
@@ -316,7 +315,7 @@ class SettingsDialog(QDialog):
             self.mark_as_changed()
             # Determine format based on current setting
             if current_color.startswith("rgba"):
-                new_color = f"rgba({color.red()}, {color.green()}, {color.blue()}, {{alpha}})" if "{alpha}" in current_color else f"rgba({color.red()}, {color.green()}, {color.blue()}, 255)"
+                new_color = f"rgba({color.red()}, {color.green()}, {color.blue()}, {{alpha}})" if "{alpha}" in current_color else f"rgba({color.red()}, {color.green()}, {color.blue()}, {UIConstants.ALPHA_CHANNEL_MAX})"
             else:
                 new_color = color.name()
             
@@ -386,7 +385,7 @@ class SettingsDialog(QDialog):
         active_profile_layout = QVBoxLayout()
         
         self.active_profile_label = QLabel()
-        self.active_profile_label.setStyleSheet("color: #42a5f5; font-size: 14px; padding: 5px;")
+        self.active_profile_label.setStyleSheet(f"color: #42a5f5; font-size: {UIConstants.TITLE_FONT_SIZE}px; padding: {UIConstants.MEDIUM_PADDING}px;")
         active_profile_layout.addWidget(self.active_profile_label)
         
         active_profile_group.setLayout(active_profile_layout)
@@ -397,24 +396,24 @@ class SettingsDialog(QDialog):
         profile_list_layout = QVBoxLayout()
         
         self.profile_list = QListWidget()
-        self.profile_list.setStyleSheet("""
-            QListWidget {
+        self.profile_list.setStyleSheet(f"""
+            QListWidget {{
                 background-color: #424242;
-                border: 1px solid #666;
-                border-radius: 3px;
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid #666;
+                border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
                 color: white;
-                padding: 5px;
-            }
-            QListWidget::item {
-                padding: 8px;
-                border-radius: 3px;
-            }
-            QListWidget::item:selected {
+                padding: {UIConstants.MEDIUM_PADDING}px;
+            }}
+            QListWidget::item {{
+                padding: {UIConstants.SETTINGS_PADDING_STANDARD}px;
+                border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
+            }}
+            QListWidget::item:selected {{
                 background-color: #1e88e5;
-            }
-            QListWidget::item:hover {
+            }}
+            QListWidget::item:hover {{
                 background-color: #555;
-            }
+            }}
         """)
         # Connect double-click signal to switch profile
         self.profile_list.itemDoubleClicked.connect(self.on_profile_double_clicked)
@@ -426,29 +425,29 @@ class SettingsDialog(QDialog):
         actions_layout = QHBoxLayout()
         
         # Button style constants
-        primary_style = """
-            QPushButton {
+        primary_style = f"""
+            QPushButton {{
                 background-color: #1e88e5;
                 color: white;
                 border: none;
-                border-radius: 3px;
-                padding: 8px 15px;
-            }
-            QPushButton:hover {
+                border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
+                padding: {UIConstants.SETTINGS_PADDING_STANDARD}px {UIConstants.BUTTON_PADDING_H}px;
+            }}
+            QPushButton:hover {{
                 background-color: #42a5f5;
-            }
+            }}
         """
-        danger_style = """
-            QPushButton {
+        danger_style = f"""
+            QPushButton {{
                 background-color: #d32f2f;
                 color: white;
                 border: none;
-                border-radius: 3px;
-                padding: 8px 15px;
-            }
-            QPushButton:hover {
+                border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
+                padding: {UIConstants.SETTINGS_PADDING_STANDARD}px {UIConstants.BUTTON_PADDING_H}px;
+            }}
+            QPushButton:hover {{
                 background-color: #f44336;
-            }
+            }}
         """
         
         # Create buttons with styles
@@ -676,14 +675,14 @@ class SettingsDialog(QDialog):
         # App name and version
         title_label = QLabel(f"<h2>{AppInfo.APP_NAME}</h2>")
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet("color: white; margin: 10px;")
+        title_label.setStyleSheet(f"color: white; margin: {UIConstants.SETTINGS_MARGIN_STANDARD}px;")
         
-        version_label = QLabel(f"<p style='font-size: 12px; color: #aaa;'>Version {AppInfo.VERSION}</p>")
+        version_label = QLabel(f"<p style='font-size: {UIConstants.SETTINGS_ABOUT_TITLE_FONT_SIZE}px; color: #aaa;'>Version {AppInfo.VERSION}</p>")
         version_label.setAlignment(Qt.AlignCenter)
         
         # Description
         description_label = QLabel(f"""
-            <div style='color: white; font-family: Arial; font-size: 12px;'>
+            <div style='color: white; font-family: Arial; font-size: {UIConstants.SETTINGS_ABOUT_DESCRIPTION_FONT_SIZE}px;'>
                 <p><b>Description:</b></p>
                 <p>{AppInfo.DESCRIPTION}</p>
                 
@@ -702,19 +701,19 @@ class SettingsDialog(QDialog):
                 <p><b>GitHub:</b> <a href="{AppInfo.GITHUB_URL}" style="color: #42a5f5;">{AppInfo.GITHUB_URL}</a></p>
                 <p><b>Repository:</b> <a href="{AppInfo.REPO_URL}" style="color: #42a5f5;">{AppInfo.REPO_URL}</a></p>
                 
-                <p style='margin-top: 15px; color: #aaa; font-size: 11px;'><b>License:</b> {AppInfo.LICENSE}</p>
-                <p style='color: #aaa; font-size: 11px;'>© {AppInfo.YEAR} {AppInfo.AUTHOR}</p>
+                <p style='margin-top: {UIConstants.SETTINGS_MARGIN_TOP_LARGE}px; color: #aaa; font-size: {UIConstants.SETTINGS_ABOUT_FOOTER_FONT_SIZE}px;'><b>License:</b> {AppInfo.LICENSE}</p>
+                <p style='color: #aaa; font-size: {UIConstants.SETTINGS_ABOUT_FOOTER_FONT_SIZE}px;'>© {AppInfo.YEAR} {AppInfo.AUTHOR}</p>
             </div>
         """)
         description_label.setWordWrap(True)
         description_label.setOpenExternalLinks(True)
         description_label.setTextFormat(Qt.RichText)
         description_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        description_label.setStyleSheet("""
-            QLabel {
+        description_label.setStyleSheet(f"""
+            QLabel {{
                 color: white;
-                padding: 10px;
-            }
+                padding: {UIConstants.XLARGE_PADDING}px;
+            }}
         """)
         
         about_widget.addWidget(title_label)
@@ -728,67 +727,67 @@ class SettingsDialog(QDialog):
     
     def apply_styles(self):
         """Apply stylesheets to the dialog"""
-        self.setStyleSheet("""
-            QDialog {
+        self.setStyleSheet(f"""
+            QDialog {{
                 background-color: #2b2b2b;
                 color: white;
-            }
-            QGroupBox {
-                border: 2px solid #555;
-                border-radius: 5px;
-                margin-top: 10px;
-                padding-top: 10px;
+            }}
+            QGroupBox {{
+                border: {UIConstants.GROUP_BOX_BORDER_WIDTH}px solid #555;
+                border-radius: {UIConstants.FRAME_RADIUS}px;
+                margin-top: {UIConstants.GROUP_BOX_MARGIN_TOP}px;
+                padding-top: {UIConstants.GROUP_BOX_PADDING_TOP}px;
                 font-weight: bold;
                 color: white;
-            }
-            QGroupBox::title {
+            }}
+            QGroupBox::title {{
                 subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
+                left: {UIConstants.GROUP_BOX_TITLE_LEFT}px;
+                padding: {UIConstants.STRETCH_FACTOR_NONE} {UIConstants.GROUP_BOX_TITLE_PADDING}px;
                 color: white;
-            }
-            QLabel {
+            }}
+            QLabel {{
                 color: white;
-            }
-            QSpinBox, QDoubleSpinBox, QLineEdit {
+            }}
+            QSpinBox, QDoubleSpinBox, QLineEdit {{
                 background-color: #424242;
-                border: 1px solid #666;
-                border-radius: 3px;
-                padding: 5px;
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid #666;
+                border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
+                padding: {UIConstants.MEDIUM_PADDING}px;
                 color: white;
-            }
-            QPushButton {
+            }}
+            QPushButton {{
                 background-color: #1e88e5;
                 color: white;
                 border: none;
-                border-radius: 3px;
-                padding: 8px 15px;
+                border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
+                padding: {UIConstants.SETTINGS_PADDING_STANDARD}px {UIConstants.BUTTON_PADDING_H}px;
                 min-width: 80px;
-            }
-            QPushButton:hover {
+            }}
+            QPushButton:hover {{
                 background-color: #42a5f5;
-            }
-            QTabWidget::pane {
-                border: 1px solid #555;
-                border-radius: 5px;
+            }}
+            QTabWidget::pane {{
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid #555;
+                border-radius: {UIConstants.FRAME_RADIUS}px;
                 background-color: #2b2b2b;
-            }
-            QTabBar::tab {
+            }}
+            QTabBar::tab {{
                 background-color: #424242;
                 color: white;
-                border: 1px solid #555;
-                padding: 8px 20px;
-                margin-right: 2px;
-                border-top-left-radius: 5px;
-                border-top-right-radius: 5px;
-            }
-            QTabBar::tab:selected {
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid #555;
+                padding: {UIConstants.SETTINGS_PADDING_STANDARD}px {UIConstants.TAB_PADDING_H}px;
+                margin-right: {UIConstants.TAB_MARGIN_RIGHT}px;
+                border-top-left-radius: {UIConstants.FRAME_RADIUS}px;
+                border-top-right-radius: {UIConstants.FRAME_RADIUS}px;
+            }}
+            QTabBar::tab:selected {{
                 background-color: #1e88e5;
                 color: white;
-            }
-            QTabBar::tab:hover {
+            }}
+            QTabBar::tab:hover {{
                 background-color: #555;
-            }
+            }}
         """)
     
     def on_width_changed(self, value: int) -> None:

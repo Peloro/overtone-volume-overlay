@@ -3,10 +3,8 @@ Main Overtone Application Class
 Coordinates all components and manages application lifecycle
 """
 import sys
-import os
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QMessageBox, QApplication
-from PyQt5.QtGui import QIcon
 import keyboard
 
 from config import SettingsManager, UIConstants, Colors

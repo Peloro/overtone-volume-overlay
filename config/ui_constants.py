@@ -98,6 +98,72 @@ class UIConstants:
     PAGINATION_LABEL_PADDING_H = 10  # Horizontal padding for page label
     FILTER_INPUT_PADDING_V = 5  # Vertical padding for filter input
     FILTER_INPUT_PADDING_H = 8  # Horizontal padding for filter input
+    
+    # Slider dimensions and spacing
+    SLIDER_HEIGHT = 20
+    SLIDER_HANDLE_WIDTH = 14
+    SLIDER_HANDLE_HEIGHT = 14
+    SLIDER_HANDLE_MARGIN_OFFSET = -7
+    SLIDER_GROOVE_HEIGHT = 6
+    SLIDER_GROOVE_MARGIN = 7
+    SLIDER_GROOVE_MARGIN_ZERO = 0
+    
+    # Slider specific configurations
+    MASTER_SLIDER_BORDER_WIDTH = 2
+    MASTER_SLIDER_MARGIN = -5
+    APP_SLIDER_BORDER_WIDTH = 1
+    APP_SLIDER_MARGIN = -4
+    
+    # Spinner configuration (opacity already defined above as OPACITY_DECIMAL_PLACES = 2)
+    OPACITY_STEP = 0.05
+    
+    # Border widths
+    STANDARD_BORDER_WIDTH = 1
+    THICK_BORDER_WIDTH = 2
+    
+    # Padding values
+    STANDARD_PADDING = 3
+    SMALL_PADDING = 2
+    MEDIUM_PADDING = 5
+    LARGE_PADDING = 8
+    XLARGE_PADDING = 10
+    BUTTON_PADDING_H = 15
+    TAB_PADDING_H = 20
+    
+    # Font sizes (additional)
+    CLEAR_BUTTON_FONT_SIZE = 16
+    SETTINGS_ABOUT_TITLE_FONT_SIZE = 12
+    SETTINGS_ABOUT_DESCRIPTION_FONT_SIZE = 12
+    SETTINGS_ABOUT_FOOTER_FONT_SIZE = 11
+    SETTINGS_INFO_FONT_SIZE = 10
+    
+    # Layout stretch factors
+    STRETCH_FACTOR_NONE = 0
+    STRETCH_FACTOR_STANDARD = 1
+    
+    # Window positioning
+    WINDOW_START_X = 0
+    WINDOW_START_Y = 0
+    
+    # Settings dialog padding and margins
+    SETTINGS_MARGIN_STANDARD = 10
+    SETTINGS_MARGIN_TOP = 10
+    SETTINGS_MARGIN_TOP_LARGE = 15
+    SETTINGS_PADDING_SMALL = 5
+    SETTINGS_PADDING_STANDARD = 8
+    
+    # Tab widget styling
+    TAB_MARGIN_RIGHT = 2
+    
+    # Group box styling
+    GROUP_BOX_BORDER_WIDTH = 2
+    GROUP_BOX_MARGIN_TOP = 10
+    GROUP_BOX_PADDING_TOP = 10
+    GROUP_BOX_TITLE_LEFT = 10
+    GROUP_BOX_TITLE_PADDING = 5
+    
+    # Alpha channel
+    ALPHA_CHANNEL_MAX = 255
 
 
 class Hotkeys:

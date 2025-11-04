@@ -267,10 +267,13 @@ class VolumeOverlayApp:
             except Exception as e:
                 logger.debug(f"Error cleaning up tray icon: {e}")
         
-        # Clean up audio controller (releases COM objects)
+        # Clean up audio controller EARLY (releases COM objects before Qt cleanup)
+        # This must happen before widget deletion to avoid COM cleanup during Qt shutdown
         if hasattr(self, 'audio_controller') and self.audio_controller:
             try:
                 self.audio_controller.cleanup()
+                # Force the audio controller reference to None
+                self.audio_controller = None
             except Exception as e:
                 logger.debug(f"Error cleaning up audio controller: {e}")
         
@@ -281,6 +284,13 @@ class VolumeOverlayApp:
                     widget.deleteLater()
                 except Exception:
                     pass
+        
+        # Force garbage collection to clean up COM objects before Qt shutdown
+        try:
+            import gc
+            gc.collect()
+        except Exception:
+            pass
         
         # Use QTimer to delay quit slightly to allow cleanup to complete
         QTimer.singleShot(UIConstants.QUIT_DELAY_MS, lambda: QApplication.quit() if QApplication.instance() else sys.exit(0))

@@ -7,7 +7,7 @@ Optimizations:
 - Use functools.lru_cache for memoization
 """
 from ctypes import POINTER, cast
-from comtypes import CLSCTX_ALL
+from comtypes import CLSCTX_ALL, COMError
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 from typing import List, Optional, Dict, Any, TypeAlias
 from functools import lru_cache
@@ -17,6 +17,7 @@ import win32gui
 import win32process
 import win32api
 import os
+import sys
 
 from config import UIConstants
 from utils.logger import get_logger
@@ -38,6 +39,8 @@ class AudioController:
     def __init__(self) -> None:
         # Flag to track if cleanup has been called
         self._cleaned_up = False
+        # Flag to track if we're in interpreter shutdown
+        self._is_shutting_down = False
         
         self._get_master_volume_interface()
         
@@ -348,6 +351,7 @@ class AudioController:
         """Safe cleanup for atexit registration"""
         try:
             if not self._cleaned_up:
+                self._is_shutting_down = True
                 self.cleanup()
         except Exception:
             pass  # Suppress all errors during atexit cleanup
@@ -360,38 +364,76 @@ class AudioController:
         logger.debug("Starting audio controller cleanup")
         
         try:
-            # Clear all session references first
-            self._pid_to_session.clear()
+            # Clear all session references first to break circular references
+            if hasattr(self, '_pid_to_session'):
+                # Store references temporarily to release them properly
+                sessions_to_cleanup = list(self._pid_to_session.values())
+                self._pid_to_session.clear()
+                
+                # Explicitly release each session
+                for session in sessions_to_cleanup:
+                    try:
+                        # Set to None to allow Python to handle cleanup
+                        session = None
+                    except Exception:
+                        pass
+                
+                # Clear the list
+                del sessions_to_cleanup
             
             # Clear caches
-            self._display_name_cache.clear()
-            self._name_timestamps.clear()
-            self._pid_to_exe_cache.clear()
-            self._window_title_cache.clear()
+            if hasattr(self, '_display_name_cache'):
+                self._display_name_cache.clear()
+            if hasattr(self, '_name_timestamps'):
+                self._name_timestamps.clear()
+            if hasattr(self, '_pid_to_exe_cache'):
+                self._pid_to_exe_cache.clear()
+            if hasattr(self, '_window_title_cache'):
+                self._window_title_cache.clear()
             
             # Clear LRU cache
             try:
-                self._get_file_description.cache_clear()
+                if hasattr(self, '_get_file_description'):
+                    self._get_file_description.cache_clear()
             except Exception as e:
                 logger.debug(f"Error clearing LRU cache: {e}")
             
             # Release master volume interface safely
             if hasattr(self, 'master_volume') and self.master_volume is not None:
                 try:
-                    # Don't manually call Release() - let Python's COM wrapper handle it
-                    # Just set to None and let garbage collection clean it up
+                    # Store reference and set to None immediately to avoid double-release
+                    master_vol_ref = self.master_volume
                     self.master_volume = None
+                    
+                    # Only manually release if not in interpreter shutdown
+                    # During shutdown, let Python handle it automatically
+                    if not self._is_shutting_down:
+                        try:
+                            # Manually release the COM reference count
+                            # Use comtypes' internal release mechanism
+                            del master_vol_ref
+                        except Exception:
+                            pass
+                    else:
+                        # During shutdown, just delete the reference
+                        del master_vol_ref
+                    
                     logger.debug("Master volume interface cleared")
+                except (COMError, ValueError) as e:
+                    # Catch COM-specific errors silently as they're expected during shutdown
+                    logger.debug(f"COM cleanup error (expected during shutdown): {e}")
                 except Exception as e:
                     logger.debug(f"Error clearing master volume interface: {e}")
             
             # Force garbage collection to clean up COM references
-            try:
-                import gc
-                gc.collect()
-                logger.debug("Forced garbage collection for COM cleanup")
-            except Exception as e:
-                logger.debug(f"Error during garbage collection: {e}")
+            # But only if not in interpreter shutdown to avoid issues
+            if not self._is_shutting_down:
+                try:
+                    import gc
+                    gc.collect()
+                    logger.debug("Forced garbage collection for COM cleanup")
+                except Exception as e:
+                    logger.debug(f"Error during garbage collection: {e}")
             
             self._cleaned_up = True
             logger.debug("Audio controller cleanup completed")
@@ -403,7 +445,13 @@ class AudioController:
     def __del__(self):
         """Destructor to ensure cleanup is called"""
         try:
+            # Check if we're in interpreter shutdown
+            if sys is None or not hasattr(sys, 'meta_path'):
+                # Interpreter is shutting down, don't do anything
+                return
+            
             if not getattr(self, '_cleaned_up', False):
+                self._is_shutting_down = True
                 self._safe_cleanup()
         except Exception:
             pass  # Suppress all errors in destructor

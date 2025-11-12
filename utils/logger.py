@@ -1,18 +1,14 @@
-"""Logging configuration for Overtone Application"""
 import logging
 from logging.handlers import RotatingFileHandler
 
 _loggers = {}
 
-# Default values to avoid circular import
-_DEFAULT_LOG_MAX_BYTES = 5 * 1024 * 1024  # 5MB
+_DEFAULT_LOG_MAX_BYTES = 5 * 1024 * 1024
 _DEFAULT_LOG_BACKUP_COUNT = 3
 
 
 def setup_logger(name: str = "overtone", log_file: str = "overtone.log", level: int = logging.INFO,
                 max_bytes: int = None, backup_count: int = None) -> logging.Logger:
-    """Setup and configure a logger with file and console handlers"""
-    # Use defaults if not provided
     if max_bytes is None:
         try:
             from config import UIConstants
@@ -47,7 +43,6 @@ def setup_logger(name: str = "overtone", log_file: str = "overtone.log", level: 
         file_handler.setFormatter(detailed_formatter)
         logger.addHandler(file_handler)
     except Exception as e:
-        # Fallback to basic logging if file handler fails
         logging.basicConfig(level=logging.WARNING)
         logging.warning(f"Could not create log file handler: {e}")
     
@@ -61,5 +56,4 @@ def setup_logger(name: str = "overtone", log_file: str = "overtone.log", level: 
 
 
 def get_logger(name: str = "overtone") -> logging.Logger:
-    """Get or create a logger instance"""
     return _loggers.get(name) or setup_logger(name)

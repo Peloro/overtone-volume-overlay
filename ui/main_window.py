@@ -372,6 +372,8 @@ class VolumeOverlay(QWidget):
     def showEvent(self, event):
         super().showEvent(event)
         self.refresh_applications()
+        # Force immediate page display update when shown
+        self.update_page_display()
     
     def hideEvent(self, event):
         super().hideEvent(event)

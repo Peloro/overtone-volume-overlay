@@ -150,6 +150,8 @@ class VolumeOverlayApp:
         self.overlay.show()
         self.overlay.activateWindow()
         self.overlay.raise_()
+        # Force page display update after showing
+        self.overlay.update_page_display()
         self.refresh_timer.start(UIConstants.REFRESH_INTERVAL)
     
     def hide_overlay(self) -> None:

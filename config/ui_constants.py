@@ -1,5 +1,4 @@
 class UIConstants:
-    """UI dimension and timing constants"""
     DEFAULT_OVERLAY_WIDTH = 300
     DEFAULT_OVERLAY_HEIGHT = 350
     MIN_OVERLAY_WIDTH = 300
@@ -7,22 +6,22 @@ class UIConstants:
     MAX_OVERLAY_WIDTH = 1000
     MAX_OVERLAY_HEIGHT = 1000
     
-    APP_CONTROL_HEIGHT = 68  # Approximate height of each app control
+    APP_CONTROL_HEIGHT = 68
     TITLE_BAR_HEIGHT = 50
     MASTER_VOLUME_HEIGHT = 80
     FILTER_BAR_HEIGHT = 35
     PAGINATION_HEIGHT = 30
     WINDOW_MARGINS = 40
-    RESERVED_HEIGHT = 235  # Increased to account for filter bar
+    RESERVED_HEIGHT = 235
     
     BUTTON_SIZE = 30
     BUTTON_HEIGHT = 24
     VOLUME_TEXT_WIDTH = 40
     
-    REFRESH_INTERVAL = 5000  # Increased to 5s to reduce CPU usage
-    FILTER_DEBOUNCE_MS = 150  # Debounce time for filter input
-    ERROR_FLASH_DURATION_MS = 300  # Duration for error visual feedback
-    NAME_CACHE_TTL_SECONDS = 30.0  # Increased TTL to reduce window enumeration
+    REFRESH_INTERVAL = 5000
+    FILTER_DEBOUNCE_MS = 150
+    ERROR_FLASH_DURATION_MS = 300
+    NAME_CACHE_TTL_SECONDS = 30.0
     
     DEFAULT_OPACITY = 0.95
     MIN_OPACITY = 0.1
@@ -47,59 +46,46 @@ class UIConstants:
     SLIDER_RADIUS = 3
     HANDLE_RADIUS = 7
     
-    # Minimum control widths
     MIN_CONTROL_WIDTH = 200
     MIN_SLIDER_WIDTH = 80
     
-    # Volume conversion
     VOLUME_PERCENTAGE_FACTOR = 100
     
-    # System tray icon sizes
     ICON_SIZE_16 = 16
     ICON_SIZE_24 = 24
     ICON_SIZE_32 = 32
     ICON_SIZE_48 = 48
     FALLBACK_ICON_SIZE = 32
     
-    # Text eliding
     TEXT_ELIDE_WIDTH = 280
     
-    # Application timing
     QUIT_DELAY_MS = 100
     RESIZE_DEBOUNCE_MS = 100
     
-    # Settings
     SETTINGS_SAVE_DEBOUNCE_MS = 500
     OPACITY_DECIMAL_PLACES = 2
     
-    # Logging
-    LOG_MAX_BYTES = 5 * 1024 * 1024  # 5MB
+    LOG_MAX_BYTES = 5 * 1024 * 1024
     LOG_BACKUP_COUNT = 3
     
-    # Profiles
     JSON_INDENT = 4
     
-    # Cache limits
     MAX_CACHE_SIZE = 100
     CACHE_CLEANUP_BATCH_SIZE = 20
     
-    # Layout constants
-    MARGIN_SIDES_COUNT = 4  # top, right, bottom, left
-    RGBA_COMPONENT_COUNT = 4  # red, green, blue, alpha
+    MARGIN_SIDES_COUNT = 4
+    RGBA_COMPONENT_COUNT = 4
     
-    # Settings Dialog
     SETTINGS_MIN_WIDTH = 450
     COLOR_BUTTON_MIN_HEIGHT = 30
     COLOR_BUTTON_MIN_WIDTH = 90
     COLOR_BUTTON_FONT_SIZE = 8
     
-    # UI Interaction
-    WHEEL_SCROLL_DELTA = 5  # Volume change per mouse wheel tick
-    PAGINATION_LABEL_PADDING_H = 10  # Horizontal padding for page label
-    FILTER_INPUT_PADDING_V = 5  # Vertical padding for filter input
-    FILTER_INPUT_PADDING_H = 8  # Horizontal padding for filter input
+    WHEEL_SCROLL_DELTA = 5
+    PAGINATION_LABEL_PADDING_H = 10
+    FILTER_INPUT_PADDING_V = 5
+    FILTER_INPUT_PADDING_H = 8
     
-    # Slider dimensions and spacing
     SLIDER_HEIGHT = 20
     SLIDER_HANDLE_WIDTH = 14
     SLIDER_HANDLE_HEIGHT = 14
@@ -108,20 +94,16 @@ class UIConstants:
     SLIDER_GROOVE_MARGIN = 7
     SLIDER_GROOVE_MARGIN_ZERO = 0
     
-    # Slider specific configurations
     MASTER_SLIDER_BORDER_WIDTH = 2
     MASTER_SLIDER_MARGIN = -5
     APP_SLIDER_BORDER_WIDTH = 1
     APP_SLIDER_MARGIN = -4
     
-    # Spinner configuration (opacity already defined above as OPACITY_DECIMAL_PLACES = 2)
     OPACITY_STEP = 0.05
     
-    # Border widths
     STANDARD_BORDER_WIDTH = 1
     THICK_BORDER_WIDTH = 2
     
-    # Padding values
     STANDARD_PADDING = 3
     SMALL_PADDING = 2
     MEDIUM_PADDING = 5
@@ -130,44 +112,36 @@ class UIConstants:
     BUTTON_PADDING_H = 15
     TAB_PADDING_H = 20
     
-    # Font sizes (additional)
     CLEAR_BUTTON_FONT_SIZE = 16
     SETTINGS_ABOUT_TITLE_FONT_SIZE = 12
     SETTINGS_ABOUT_DESCRIPTION_FONT_SIZE = 12
     SETTINGS_ABOUT_FOOTER_FONT_SIZE = 11
     SETTINGS_INFO_FONT_SIZE = 10
     
-    # Layout stretch factors
     STRETCH_FACTOR_NONE = 0
     STRETCH_FACTOR_STANDARD = 1
     
-    # Window positioning
     WINDOW_START_X = 0
     WINDOW_START_Y = 0
     
-    # Settings dialog padding and margins
     SETTINGS_MARGIN_STANDARD = 10
     SETTINGS_MARGIN_TOP = 10
     SETTINGS_MARGIN_TOP_LARGE = 15
     SETTINGS_PADDING_SMALL = 5
     SETTINGS_PADDING_STANDARD = 8
     
-    # Tab widget styling
     TAB_MARGIN_RIGHT = 2
     
-    # Group box styling
     GROUP_BOX_BORDER_WIDTH = 2
     GROUP_BOX_MARGIN_TOP = 10
     GROUP_BOX_PADDING_TOP = 10
     GROUP_BOX_TITLE_LEFT = 10
     GROUP_BOX_TITLE_PADDING = 5
     
-    # Alpha channel
     ALPHA_CHANNEL_MAX = 255
 
 
 class Hotkeys:
-    """Default hotkey configurations"""
     DEFAULT_HOTKEY_OPEN = "ctrl+/"
     DEFAULT_HOTKEY_SETTINGS = "ctrl+shift+s"
     DEFAULT_HOTKEY_QUIT = "ctrl+q"

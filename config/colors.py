@@ -1,7 +1,5 @@
 class ColorsMeta(type):
-    """Metaclass to make color attributes dynamic"""
     def __getattribute__(cls, name):
-        # List of customizable color attributes
         customizable = {
             "MAIN_BACKGROUND", "TITLE_BAR_BG", "MASTER_FRAME_BG", 
             "CONTAINER_BG", "APP_CONTROL_BG", "MASTER_SLIDER_HANDLE",
@@ -22,11 +20,8 @@ class ColorsMeta(type):
 
 
 class Colors(metaclass=ColorsMeta):
-    """Color constants using RGBA values - can be overridden by settings"""
-    # These are default values, but will be replaced by settings_manager values
     _settings_manager = None
     
-    # Default color values
     _DEFAULTS = {
         "MAIN_BACKGROUND": "rgba(30, 30, 30, {alpha})",
         "TITLE_BAR_BG": "rgba(43, 43, 43, 255)",
@@ -40,7 +35,6 @@ class Colors(metaclass=ColorsMeta):
         "TEXT_WHITE": "white",
     }
     
-    # Static colors (not customizable)
     DIALOG_BG = "#2b2b2b"
     INPUT_BG = "#424242"
     DARK_INPUT_BG = "#1a2332"
@@ -73,5 +67,4 @@ class Colors(metaclass=ColorsMeta):
     
     @classmethod
     def set_settings_manager(cls, settings_manager):
-        """Set the settings manager to use for color customization"""
         cls._settings_manager = settings_manager

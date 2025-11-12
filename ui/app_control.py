@@ -1,6 +1,3 @@
-"""
-Individual Application Volume Control Widget
-"""
 from typing import Dict, Any
 from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QSlider, 
                              QLabel, QPushButton, QLineEdit, QFrame)
@@ -11,7 +8,6 @@ from .base_volume_control import BaseVolumeControl
 
 
 class AppVolumeControl(QFrame, BaseVolumeControl):
-    """Widget for controlling volume of a single application"""
     
     def __init__(self, session: Dict[str, Any], audio_controller) -> None:
         QFrame.__init__(self)
@@ -22,55 +18,49 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         self.init_ui()
 
     def update_session(self, session: Dict[str, Any]) -> None:
-        """Update UI state from a refreshed session without recreating the widget"""
+        """Update the control with new session data"""
         self.session = session
         new_val = int(session['volume'] * UIConstants.VOLUME_PERCENTAGE_FACTOR)
         new_muted = session.get('muted', False)
         
-        # Batch signal blocking to reduce overhead
-        needs_update = False
-        
+        # Update slider value if different
         if self.slider and self.slider.value() != new_val:
             self.slider.blockSignals(True)
             self.slider.setValue(new_val)
             self.slider.blockSignals(False)
-            needs_update = True
             
+        # Update volume text if different
         if self.volume_text:
             new_val_str = str(new_val)
             if self.volume_text.text() != new_val_str:
                 self.volume_text.setText(new_val_str)
                 
+        # Update mute state if different
         if self.is_muted != new_muted:
             self.is_muted = new_muted
             self.update_mute_icon(new_muted)
     
     def init_ui(self):
-        """Initialize the UI for a single app control"""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(*[UIConstants.FRAME_MARGIN] * UIConstants.MARGIN_SIDES_COUNT)
         layout.setSpacing(UIConstants.CONTROL_SPACING)
         self.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.APP_CONTROL_BG))
         
-        # Set fixed size to prevent deformation and expansion
         self.setFixedHeight(UIConstants.APP_CONTROL_HEIGHT)
         self.setMinimumWidth(UIConstants.MIN_CONTROL_WIDTH)
         self.setMaximumHeight(UIConstants.APP_CONTROL_HEIGHT)
         
-        # Set size policy to prevent expansion
         from PyQt5.QtWidgets import QSizePolicy
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         
-        # Enable mouse tracking for hover events
         self.setMouseTracking(True)
         
         self.name_label = QLabel(self.session['name'])
         self.name_label.setStyleSheet(StyleSheets.get_label_stylesheet())
-        self.name_label.setMinimumWidth(UIConstants.STRETCH_FACTOR_NONE)  # Allow text to be elided
-        self.name_label.setWordWrap(False)  # Prevent wrapping
-        self.name_label.setTextFormat(Qt.PlainText)  # Use plain text
+        self.name_label.setMinimumWidth(UIConstants.STRETCH_FACTOR_NONE)
+        self.name_label.setWordWrap(False)
+        self.name_label.setTextFormat(Qt.PlainText)
         self.name_label.setSizePolicy(self.name_label.sizePolicy().Ignored, self.name_label.sizePolicy().Preferred)
-        # Elide text from the middle to keep both start and end visible
         font_metrics = self.name_label.fontMetrics()
         elided_text = font_metrics.elidedText(self.session['name'], Qt.ElideMiddle, UIConstants.TEXT_ELIDE_WIDTH)
         self.name_label.setText(elided_text)
@@ -106,49 +96,39 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         self.mute_button.setStyleSheet(StyleSheets.get_mute_button_stylesheet(is_master=False))
         self.mute_button.clicked.connect(self.on_mute_clicked)
         
-        control_layout.addWidget(self.slider, UIConstants.STRETCH_FACTOR_STANDARD)  # Give slider stretch factor
+        control_layout.addWidget(self.slider, UIConstants.STRETCH_FACTOR_STANDARD)
         control_layout.addWidget(self.volume_text, UIConstants.STRETCH_FACTOR_NONE)
         control_layout.addWidget(self.mute_button, UIConstants.STRETCH_FACTOR_NONE)
         layout.addLayout(control_layout)
     
     def on_slider_changed(self, value: int) -> None:
-        """Handle slider value change"""
         self.handle_volume_slider_change(
             value,
             lambda vol: self.audio_controller.set_application_volume(self.session['pids'], vol / UIConstants.VOLUME_PERCENTAGE_FACTOR)
         )
     
     def on_mute_clicked(self) -> None:
-        """Handle mute button click"""
         self.handle_mute_toggle(
             lambda: self.audio_controller.get_application_mute(self.session['pids']),
             lambda mute: self.audio_controller.set_application_mute(self.session['pids'], mute)
         )
     
     def on_volume_text_changed(self) -> None:
-        """Handle volume text box change"""
         self.handle_volume_text_change()
     
     def apply_styles(self):
-        """Reapply all styles to reflect color changes"""
-        # Reapply frame background
         self.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.APP_CONTROL_BG))
         
-        # Reapply label style
         if hasattr(self, 'name_label') and self.name_label:
             self.name_label.setStyleSheet(StyleSheets.get_label_stylesheet())
         
-        # Reapply slider style
         if self.slider:
             self.slider.setStyleSheet(StyleSheets.get_app_slider_stylesheet())
         
-        # Reapply volume text style
         if self.volume_text:
             self.volume_text.setStyleSheet(StyleSheets.get_volume_text_stylesheet())
         
-        # Reapply mute button style
         if self.mute_button:
             self.mute_button.setStyleSheet(StyleSheets.get_mute_button_stylesheet(is_master=False))
         
-        # Force update
         self.update()

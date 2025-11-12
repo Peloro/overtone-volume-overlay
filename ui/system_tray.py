@@ -1,6 +1,3 @@
-"""
-System Tray Icon and Menu
-"""
 import os
 from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QAction
 from PyQt5.QtGui import QIcon, QPixmap, QPainter, QColor, QPolygon
@@ -45,11 +42,9 @@ class SystemTrayIcon(QSystemTrayIcon):
         self.activated.connect(self.on_activated)
     
     def create_icon(self) -> QIcon:
-        """Create or load a tray icon, preserving transparency when available."""
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         assets_dir = os.path.join(base_dir, 'assets')
         
-        # Try ICO first (best for Windows), then PNG
         icon_files = ['icon2_black.ico', 'icon2.png']
 
         for icon_file in icon_files:
@@ -58,21 +53,18 @@ class SystemTrayIcon(QSystemTrayIcon):
             if not os.path.exists(icon_path):
                 continue
 
-            # Try ICO - most efficient option
             if icon_file.endswith('.ico'):
                 if not (icon := QIcon(icon_path)).isNull():
                     logger.info(f"Loaded tray icon from ICO: {icon_path}")
                     return icon
                 continue
 
-            # Try PNG with alpha channel
             if (original := QPixmap(icon_path)).isNull():
                 continue
             
             if not original.hasAlphaChannel():
                 continue
 
-            # Generate only common sizes to reduce memory usage
             icon = QIcon()
             for size in self._icon_sizes:
                 canvas = QPixmap(size, size)
@@ -92,7 +84,6 @@ class SystemTrayIcon(QSystemTrayIcon):
         return self._create_fallback_icon()
     
     def _create_fallback_icon(self) -> QIcon:
-        """Create a simple fallback icon if no icon files are found"""
         pixmap = QPixmap(self._fallback_icon_size, self._fallback_icon_size)
         pixmap.fill(Qt.transparent)
         
@@ -101,7 +92,6 @@ class SystemTrayIcon(QSystemTrayIcon):
         painter.setBrush(QColor(30, 136, 229))
         painter.setPen(Qt.NoPen)
         
-        # Simple speaker icon - rectangle and triangle
         painter.drawRect(8, 12, 8, 8)
         painter.drawPolygon(QPolygon([QPoint(16, 12), QPoint(24, 8), QPoint(24, 24), QPoint(16, 20)]))
         
@@ -109,24 +99,19 @@ class SystemTrayIcon(QSystemTrayIcon):
         return QIcon(pixmap)
     
     def on_show_overlay_clicked(self) -> None:
-        """Handle show overlay menu click"""
         self.app.show_overlay()
     
     def on_settings_clicked(self) -> None:
-        """Handle settings menu click"""
         self.app.show_settings()
     
     def on_quit_clicked(self) -> None:
-        """Handle quit menu click"""
         self.app.confirm_quit()
     
     def on_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
-        """Handle tray icon activation"""
         if reason == QSystemTrayIcon.DoubleClick:
             self.app.show_overlay()
     
     def cleanup(self) -> None:
-        """Clean up system tray resources"""
         try:
             self.hide()
             if self.menu:
@@ -137,7 +122,6 @@ class SystemTrayIcon(QSystemTrayIcon):
             logger.debug(f"Error during system tray cleanup: {e}")
     
     def __del__(self):
-        """Destructor to ensure cleanup"""
         try:
             self.cleanup()
         except Exception:

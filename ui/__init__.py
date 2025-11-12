@@ -1,4 +1,3 @@
-"""UI components package"""
 from .app_control import AppVolumeControl
 from .master_control import MasterVolumeControl
 from .main_window import VolumeOverlay

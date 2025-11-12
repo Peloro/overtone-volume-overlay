@@ -3,11 +3,9 @@ from .colors import Colors
 
 
 class StyleSheets:
-    """Reusable stylesheet templates"""
     
     @staticmethod
     def get_frame_stylesheet(bg_color: str = None, border_radius: int = None, padding: int = None) -> str:
-        """Get common frame stylesheet with customizable parameters"""
         if bg_color is None:
             bg_color = Colors.CONTAINER_BG
         if border_radius is None:
@@ -25,7 +23,6 @@ class StyleSheets:
     
     @staticmethod
     def get_overlay_stylesheet() -> str:
-        """Get main overlay stylesheet"""
         return f"""
             QWidget#VolumeOverlay {{
                 background-color: rgba(30, 30, 30, 255);
@@ -55,7 +52,6 @@ class StyleSheets:
     
     @staticmethod
     def _get_button_stylesheet(bg_color: str, hover_color: str, font_size: int = None, bold: bool = False) -> str:
-        """Helper to generate button stylesheet"""
         font_size = font_size or UIConstants.BUTTON_FONT_SIZE
         weight = "font-weight: bold;" if bold else ""
         return f"""
@@ -84,7 +80,6 @@ class StyleSheets:
     @staticmethod
     def _get_slider_stylesheet(handle_color: str, border_color: str, hover_color: str, 
                                border_width: int = None, margin: int = None) -> str:
-        """Helper to generate slider stylesheet"""
         if border_width is None:
             border_width = UIConstants.APP_SLIDER_BORDER_WIDTH
         if margin is None:

@@ -1,4 +1,3 @@
-"""Base Volume Control Widget - Contains shared functionality for volume controls"""
 from typing import Callable
 from PyQt5.QtWidgets import QWidget, QSlider, QPushButton, QLineEdit
 from PyQt5.QtCore import QTimer
@@ -6,7 +5,6 @@ from config import UIConstants
 
 
 class BaseVolumeControl(QWidget):
-    """Base class for volume control widgets with common functionality"""
     
     def __init__(self) -> None:
         super().__init__()
@@ -18,17 +16,14 @@ class BaseVolumeControl(QWidget):
         self._is_hovered = False
     
     def init_volume_state(self, current_volume: int, is_muted: bool = False) -> None:
-        """Initialize volume state, storing non-zero volume for unmute"""
         self.previous_volume = current_volume if current_volume > 0 else UIConstants.VOLUME_PERCENTAGE_FACTOR
         self.is_muted = is_muted
     
     def update_mute_icon(self, is_muted: bool) -> None:
-        """Update mute button icon based on mute state"""
         if self.mute_button:
             self.mute_button.setText("🔇" if is_muted else "🔊")
     
     def handle_volume_slider_change(self, value: int, set_volume_callback: Callable[[float], bool]) -> None:
-        """Handle slider value change with common logic"""
         set_volume_callback(value)
         if self.volume_text:
             self.volume_text.setText(str(value))
@@ -36,7 +31,6 @@ class BaseVolumeControl(QWidget):
             self.previous_volume = value
     
     def handle_mute_toggle(self, get_mute_callback: Callable[[], bool], set_mute_callback: Callable[[bool], bool]) -> None:
-        """Handle mute button click with common logic"""
         if not (self.slider and self.volume_text):
             return
         
@@ -49,7 +43,6 @@ class BaseVolumeControl(QWidget):
             print(f"Error toggling mute: {e}")
     
     def handle_volume_text_change(self) -> None:
-        """Handle volume text box change with validation"""
         if not self.volume_text or not self.slider:
             return
         
@@ -62,7 +55,6 @@ class BaseVolumeControl(QWidget):
             QTimer.singleShot(UIConstants.ERROR_FLASH_DURATION_MS, lambda: self.volume_text.setStyleSheet(original_style))
     
     def wheelEvent(self, event) -> None:
-        """Handle mouse wheel events for volume adjustment"""
         if not self._is_hovered:
             event.ignore()
             return
@@ -73,11 +65,9 @@ class BaseVolumeControl(QWidget):
         event.accept()
     
     def enterEvent(self, event) -> None:
-        """Handle mouse enter event"""
         self._is_hovered = True
         super().enterEvent(event)
     
     def leaveEvent(self, event) -> None:
-        """Handle mouse leave event"""
         self._is_hovered = False
         super().leaveEvent(event)

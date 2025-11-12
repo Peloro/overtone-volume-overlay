@@ -124,5 +124,6 @@ class SystemTrayIcon(QSystemTrayIcon):
     def __del__(self):
         try:
             self.cleanup()
-        except Exception:
+        except Exception as e:
+            # Suppress exceptions during destructor
             pass

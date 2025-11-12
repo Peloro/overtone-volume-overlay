@@ -96,8 +96,8 @@ class AudioController:
                 desc = win32api.GetFileVersionInfo(exe_path, string_file_info + key)
                 if desc:
                     return desc.strip()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Could not get file description for {exe_path}: {e}")
         return None
     
     def _get_window_title_by_pid(self, pid: int) -> Optional[str]:
@@ -117,8 +117,8 @@ class AudioController:
                             if title:
                                 result_list.append(title)
                                 return False
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Error in enum_window_callback for hwnd {hwnd}: {e}")
                 return True
             
             titles = []
@@ -190,7 +190,8 @@ class AudioController:
                 try:
                     volume = session.SimpleAudioVolume.GetMasterVolume()
                     muted = session.SimpleAudioVolume.GetMute()
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Could not get volume/mute for session: {e}")
                     continue
                 
                 process_name = session.Process.name()
@@ -247,7 +248,8 @@ class AudioController:
             try:
                 session.SimpleAudioVolume.GetMute()
                 return session
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Session for PID {pid} is stale, removing: {e}")
                 self._pid_to_session.pop(pid, None)
         
         for session in AudioUtilities.GetAllSessions():
@@ -314,8 +316,8 @@ class AudioController:
                 for session in sessions_to_cleanup:
                     try:
                         session = None
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Error clearing session reference: {e}")
                 
                 del sessions_to_cleanup
             
@@ -342,8 +344,8 @@ class AudioController:
                     if not self._is_shutting_down:
                         try:
                             del master_vol_ref
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.debug(f"Error deleting master_vol_ref: {e}")
                     else:
                         del master_vol_ref
                     
@@ -370,11 +372,11 @@ class AudioController:
     
     def __del__(self):
         try:
-            if sys is None or not hasattr(sys, 'meta_path'):
-                return
-            
+            # Simplified check - sys module should always be available
             if not getattr(self, '_cleaned_up', False):
                 self._is_shutting_down = True
                 self._safe_cleanup()
-        except Exception:
-            pass
+        except Exception as e:
+            # Suppress exceptions during interpreter shutdown
+            if sys and hasattr(sys, 'stderr'):
+                logger.debug(f"Error in AudioController destructor: {e}")

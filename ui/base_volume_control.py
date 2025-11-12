@@ -2,6 +2,9 @@ from typing import Callable
 from PyQt5.QtWidgets import QWidget, QSlider, QPushButton, QLineEdit
 from PyQt5.QtCore import QTimer
 from config import UIConstants
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class BaseVolumeControl(QWidget):
@@ -40,7 +43,7 @@ class BaseVolumeControl(QWidget):
                 self.is_muted = new_mute
                 self.update_mute_icon(new_mute)
         except Exception as e:
-            print(f"Error toggling mute: {e}")
+            logger.error(f"Error toggling mute: {e}", exc_info=True)
     
     def handle_volume_text_change(self) -> None:
         if not self.volume_text or not self.slider:

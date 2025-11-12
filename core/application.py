@@ -231,8 +231,8 @@ class VolumeOverlayApp:
                 self.hotkey_handler.toggle_signal.disconnect()
                 self.hotkey_handler.settings_signal.disconnect()
                 self.hotkey_handler.quit_signal.disconnect()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Error disconnecting hotkey signals: {e}")
         
         # Unregister keyboard hooks BEFORE cleaning up UI
         self._unregister_hotkeys()
@@ -282,15 +282,15 @@ class VolumeOverlayApp:
             if widget is not None:
                 try:
                     widget.deleteLater()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Error calling deleteLater on widget: {e}")
         
         # Force garbage collection to clean up COM objects before Qt shutdown
         try:
             import gc
             gc.collect()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Error during garbage collection: {e}")
         
         # Use QTimer to delay quit slightly to allow cleanup to complete
         QTimer.singleShot(UIConstants.QUIT_DELAY_MS, lambda: QApplication.quit() if QApplication.instance() else sys.exit(0))

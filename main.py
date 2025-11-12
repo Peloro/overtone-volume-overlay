@@ -66,8 +66,8 @@ def main() -> int:
             error_dialog.setWindowFlags(Qt.WindowStaysOnTopHint)
             set_window_icon(error_dialog)
             error_dialog.exec_()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Error displaying error dialog: {e}")
         
         return 1
 

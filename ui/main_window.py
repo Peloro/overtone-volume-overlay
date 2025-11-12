@@ -5,8 +5,11 @@ from PyQt5.QtCore import Qt, QPoint, QTimer
 
 from config import UIConstants, Colors, StyleSheets
 from utils import create_standard_button, batch_update
+from utils.logger import get_logger
 from .app_control import AppVolumeControl
 from .master_control import MasterVolumeControl
+
+logger = get_logger(__name__)
 
 
 class VolumeOverlay(QWidget):
@@ -313,8 +316,8 @@ class VolumeOverlay(QWidget):
                     self.container_layout.removeWidget(widget)
                     widget.setParent(None)
                     widget.deleteLater()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Error removing widget '{name}': {e}")
             self.app_controls.clear()
             
             while self.container_layout.count() > UIConstants.STRETCH_FACTOR_STANDARD:
@@ -323,8 +326,8 @@ class VolumeOverlay(QWidget):
                     try:
                         widget.setParent(None)
                         widget.deleteLater()
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Error cleaning up layout widget: {e}")
     
     def previous_page(self) -> None:
         if self.current_page > 0:
@@ -422,5 +425,6 @@ class VolumeOverlay(QWidget):
                 self._filter_timer.stop()
             if hasattr(self, '_resize_timer') and self._resize_timer:
                 self._resize_timer.stop()
-        except Exception:
+        except Exception as e:
+            # Suppress exceptions during cleanup
             pass

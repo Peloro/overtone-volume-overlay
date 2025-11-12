@@ -47,7 +47,9 @@ def setup_logger(name: str = "overtone", log_file: str = "overtone.log", level: 
         file_handler.setFormatter(detailed_formatter)
         logger.addHandler(file_handler)
     except Exception as e:
-        print(f"Warning: Could not create log file handler: {e}")
+        # Fallback to basic logging if file handler fails
+        logging.basicConfig(level=logging.WARNING)
+        logging.warning(f"Could not create log file handler: {e}")
     
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.WARNING)

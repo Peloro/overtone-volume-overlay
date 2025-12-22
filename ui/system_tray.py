@@ -11,15 +11,16 @@ class SystemTrayIcon(QSystemTrayIcon):
     def __init__(self, app) -> None:
         self.app = app
         
-        icon = self.create_icon()
-        super().__init__(icon)
-        
-        self.setToolTip("Overtone")
-        
+        # Initialize icon sizes before create_icon() is called
         from config import UIConstants
         self._icon_sizes = (UIConstants.ICON_SIZE_16, UIConstants.ICON_SIZE_24, 
                            UIConstants.ICON_SIZE_32, UIConstants.ICON_SIZE_48)
         self._fallback_icon_size = UIConstants.FALLBACK_ICON_SIZE
+        
+        icon = self.create_icon()
+        super().__init__(icon)
+        
+        self.setToolTip("Overtone")
         
         self.menu = QMenu()
         

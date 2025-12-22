@@ -23,7 +23,6 @@ CacheDict: TypeAlias = Dict[int, str]
 
 class AudioController:
     _EXE_EXTENSION = '.exe'
-    _EXE_EXTENSION_LENGTH = 4  # Length of ".exe"
     
     def __init__(self) -> None:
         self._cleaned_up = False
@@ -157,7 +156,7 @@ class AudioController:
                 display_name = self._get_file_description(exe_path)
         
         if not display_name:
-            display_name = process_name[:-self._EXE_EXTENSION_LENGTH] if process_name.lower().endswith(self._EXE_EXTENSION) else process_name
+            display_name = process_name[:-len(self._EXE_EXTENSION)] if process_name.lower().endswith(self._EXE_EXTENSION) else process_name
         
         if len(self._display_name_cache) >= self._max_cache_size:
             expired = [k for k, v in self._name_timestamps.items() if now - v >= self._name_ttl_seconds]
@@ -310,16 +309,7 @@ class AudioController:
         
         try:
             if hasattr(self, '_pid_to_session'):
-                sessions_to_cleanup = list(self._pid_to_session.values())
                 self._pid_to_session.clear()
-                
-                for session in sessions_to_cleanup:
-                    try:
-                        session = None
-                    except Exception as e:
-                        logger.debug(f"Error clearing session reference: {e}")
-                
-                del sessions_to_cleanup
             
             if hasattr(self, '_display_name_cache'):
                 self._display_name_cache.clear()

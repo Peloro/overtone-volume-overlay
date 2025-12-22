@@ -221,7 +221,6 @@ class VolumeOverlay(QWidget):
     def apply_filter(self) -> None:
         if self.filter_text:
             self.filtered_sessions = [s for s in self.all_sessions if self.filter_text in s['name'].lower()]
-            self.filtered_sessions.sort(key=lambda s: s['name'].lower())
         else:
             self.filtered_sessions = self.all_sessions
         self.update_page_display()

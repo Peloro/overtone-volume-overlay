@@ -2,11 +2,12 @@
 Settings Dialog for configuring the application
 """
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QPushButton, QSpinBox, QDoubleSpinBox, QLineEdit,
+                             QPushButton, QSpinBox, QDoubleSpinBox,
                              QGroupBox, QFormLayout, QCheckBox, QTabWidget, QWidget, QColorDialog)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
 from config import UIConstants, AppInfo
+from .hotkey_recorder import HotkeyRecorderButton
 
 
 class SettingsDialog(QDialog):
@@ -126,25 +127,18 @@ class SettingsDialog(QDialog):
         ])
         
         # Hotkey group
-        self.hotkey_open_edit = QLineEdit(self.app.settings_manager.hotkey_open)
-        self.hotkey_settings_edit = QLineEdit(self.app.settings_manager.hotkey_settings)
-        self.hotkey_quit_edit = QLineEdit(self.app.settings_manager.hotkey_quit)
+        self.hotkey_open_btn = HotkeyRecorderButton(self.app.settings_manager.hotkey_open)
+        self.hotkey_settings_btn = HotkeyRecorderButton(self.app.settings_manager.hotkey_settings)
+        self.hotkey_quit_btn = HotkeyRecorderButton(self.app.settings_manager.hotkey_quit)
         
-        for edit in (self.hotkey_open_edit, self.hotkey_settings_edit, self.hotkey_quit_edit):
-            edit.textChanged.connect(self.on_hotkey_changed)
-        
-        hotkey_info = QLabel("Format: ctrl+shift+key, alt+key, etc.")
-        hotkey_info.setStyleSheet(f"color: gray; font-size: {UIConstants.SETTINGS_INFO_FONT_SIZE}px;")
-        
-        hotkey_warning = QLabel("Note: Changes apply immediately")
-        hotkey_warning.setStyleSheet(f"color: #42a5f5; font-size: {UIConstants.SETTINGS_INFO_FONT_SIZE}px; font-style: italic;")
+        self.hotkey_open_btn.hotkey_changed.connect(lambda hk: self.on_hotkey_recorded("hotkey_open", hk))
+        self.hotkey_settings_btn.hotkey_changed.connect(lambda hk: self.on_hotkey_recorded("hotkey_settings", hk))
+        self.hotkey_quit_btn.hotkey_changed.connect(lambda hk: self.on_hotkey_recorded("hotkey_quit", hk))
         
         hotkey_group = self._create_group_with_form("Hotkeys", [
-            ("Open Overlay:", self.hotkey_open_edit),
-            ("Open Settings:", self.hotkey_settings_edit),
-            ("Quit Application:", self.hotkey_quit_edit),
-            hotkey_info,
-            hotkey_warning
+            ("Open Overlay:", self.hotkey_open_btn),
+            ("Open Settings:", self.hotkey_settings_btn),
+            ("Quit Application:", self.hotkey_quit_btn),
         ])
         
         for group in (size_group, appearance_group, behavior_group, hotkey_group):
@@ -635,9 +629,9 @@ class SettingsDialog(QDialog):
         self.width_spin.setValue(sm.overlay_width)
         self.height_spin.setValue(sm.overlay_height)
         self.opacity_spin.setValue(sm.overlay_opacity)
-        self.hotkey_open_edit.setText(sm.hotkey_open)
-        self.hotkey_settings_edit.setText(sm.hotkey_settings)
-        self.hotkey_quit_edit.setText(sm.hotkey_quit)
+        self.hotkey_open_btn.set_hotkey(sm.hotkey_open)
+        self.hotkey_settings_btn.set_hotkey(sm.hotkey_settings)
+        self.hotkey_quit_btn.set_hotkey(sm.hotkey_quit)
         self.confirm_quit_checkbox.setChecked(sm.confirm_on_quit)
         self.show_system_volume_checkbox.setChecked(sm.show_system_volume)
         self.always_show_filter_checkbox.setChecked(sm.always_show_filter)
@@ -831,12 +825,9 @@ class SettingsDialog(QDialog):
         self.app.overlay.update_filter_display_mode()
         self.app.settings_manager.save_settings(debounce=False)
     
-    def on_hotkey_changed(self) -> None:
-        """Handle hotkey change - save and reapply immediately"""
+    def on_hotkey_recorded(self, setting_key: str, new_hotkey: str) -> None:
+        """Handle hotkey recording - save and reapply immediately"""
         self.mark_as_changed()
-        self.app.settings_manager.update({
-            "hotkey_open": self.hotkey_open_edit.text(),
-            "hotkey_settings": self.hotkey_settings_edit.text(),
-            "hotkey_quit": self.hotkey_quit_edit.text(),
-        })
+        self.app.settings_manager.set(setting_key, new_hotkey)
+        self.app.settings_manager.save_settings(debounce=False)
         self.app.setup_hotkeys()

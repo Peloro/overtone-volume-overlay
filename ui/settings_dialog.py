@@ -89,9 +89,15 @@ class SettingsDialog(QDialog):
         self.height_spin.setValue(self.app.settings_manager.overlay_height)
         self.height_spin.valueChanged.connect(self.on_height_changed)
         
+        # Resize mode button
+        self.resize_mode_btn = QPushButton("Enter Resize Mode")
+        self.resize_mode_btn.setToolTip("Opens the overlay in a resizable window mode.\nDrag the edges to resize, then click 'Done' to save.")
+        self.resize_mode_btn.clicked.connect(self.enter_resize_mode)
+        
         size_group = self._create_group_with_form("Overlay Size", [
             ("Width:", self.width_spin),
-            ("Height:", self.height_spin)
+            ("Height:", self.height_spin),
+            self.resize_mode_btn
         ])
         
         # Appearance group
@@ -831,3 +837,17 @@ class SettingsDialog(QDialog):
         self.app.settings_manager.set(setting_key, new_hotkey)
         self.app.settings_manager.save_settings(debounce=False)
         self.app.setup_hotkeys()
+    
+    def enter_resize_mode(self) -> None:
+        """Enter resize mode - makes the overlay window resizable"""
+        self.app.overlay.enter_resize_mode()
+        self.hide()  # Hide settings while resizing
+    
+    def update_size_spinboxes(self) -> None:
+        """Update the size spinboxes with current overlay dimensions"""
+        self.width_spin.blockSignals(True)
+        self.height_spin.blockSignals(True)
+        self.width_spin.setValue(self.app.settings_manager.overlay_width)
+        self.height_spin.setValue(self.app.settings_manager.overlay_height)
+        self.width_spin.blockSignals(False)
+        self.height_spin.blockSignals(False)

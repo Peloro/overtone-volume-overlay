@@ -35,6 +35,8 @@ class VolumeOverlay(QWidget):
         self._resize_timer.setInterval(UIConstants.RESIZE_DEBOUNCE_MS)
         self._resize_timer.timeout.connect(self._handle_resize)
         
+        self._resize_mode = False  # Track if we're in resize mode
+        
         self.hide()
         
         self.init_ui()
@@ -181,6 +183,109 @@ class VolumeOverlay(QWidget):
         opacity = self.app.settings_manager.overlay_opacity
         
         self.setWindowOpacity(opacity)
+    
+    def enter_resize_mode(self) -> None:
+        """Enter resize mode - makes the window resizable with visible borders"""
+        self._resize_mode = True
+        
+        # Store original position
+        self._original_pos = self.pos()
+        
+        # Change window flags to allow resizing (remove frameless)
+        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.Tool)
+        
+        # Update title to indicate resize mode
+        self.title_label.setText("Overtone - Resize Mode")
+        
+        # Hide title bar buttons during resize mode
+        self._hide_title_bar_buttons()
+        
+        # Add done button to title bar
+        self._add_done_button()
+        
+        # Show the window with new flags
+        self.show()
+        self.move(self._original_pos)
+    
+    def _hide_title_bar_buttons(self) -> None:
+        """Hide the title bar buttons during resize mode"""
+        if hasattr(self, 'filter_toggle_btn'):
+            self.filter_toggle_btn.setVisible(False)
+        if hasattr(self, 'settings_btn'):
+            self.settings_btn.setVisible(False)
+        if hasattr(self, 'minimize_btn'):
+            self.minimize_btn.setVisible(False)
+        if hasattr(self, 'close_btn'):
+            self.close_btn.setVisible(False)
+    
+    def _show_title_bar_buttons(self) -> None:
+        """Show the title bar buttons after exiting resize mode"""
+        if hasattr(self, 'filter_toggle_btn'):
+            # Only show filter button if not in always_show_filter mode
+            self.filter_toggle_btn.setVisible(not self.app.settings_manager.always_show_filter)
+        if hasattr(self, 'settings_btn'):
+            self.settings_btn.setVisible(True)
+        if hasattr(self, 'minimize_btn'):
+            self.minimize_btn.setVisible(True)
+        if hasattr(self, 'close_btn'):
+            self.close_btn.setVisible(True)
+    
+    def _add_done_button(self) -> None:
+        """Add a Done button to exit resize mode"""
+        from utils import create_standard_button
+        
+        self.done_resize_btn = create_standard_button(
+            "✓", 
+            self.exit_resize_mode, 
+            "Save size and exit resize mode",
+            StyleSheets.get_settings_button_stylesheet()
+        )
+        self.done_resize_btn.setMinimumWidth(60)
+        
+        # Insert before other buttons
+        title_layout = self.title_bar.layout()
+        # Insert after the title label and stretch
+        title_layout.insertWidget(2, self.done_resize_btn)
+    
+    def exit_resize_mode(self) -> None:
+        """Exit resize mode and save the new size"""
+        self._resize_mode = False
+        
+        # Save the new size
+        new_width = self.width()
+        new_height = self.height()
+        self.app.settings_manager.set("overlay_width", new_width)
+        self.app.settings_manager.set("overlay_height", new_height)
+        self.app.settings_manager.save_settings()
+        
+        # Store position before changing flags
+        current_pos = self.pos()
+        
+        # Remove done button
+        if hasattr(self, 'done_resize_btn'):
+            self.done_resize_btn.setParent(None)
+            self.done_resize_btn.deleteLater()
+            del self.done_resize_btn
+        
+        # Restore title
+        self.title_label.setText("Overtone")
+        
+        # Restore title bar buttons
+        self._show_title_bar_buttons()
+        
+        # Restore frameless window flags
+        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.Tool)
+        
+        # Show and restore position
+        self.show()
+        self.move(current_pos)
+        
+        # Update settings dialog spinboxes and show it again
+        if hasattr(self.app, 'settings_dialog') and self.app.settings_dialog:
+            self.app.settings_dialog.update_size_spinboxes()
+            self.app.settings_dialog.show()
+        
+        logger.info(f"Resize mode exited. New size: {new_width}x{new_height}")
     
     def update_system_volume_visibility(self):
         show_system_volume = self.app.settings_manager.show_system_volume
@@ -382,6 +487,12 @@ class VolumeOverlay(QWidget):
             self._resize_timer.stop()
     
     def closeEvent(self, event):
+        # If in resize mode, exit it first
+        if self._resize_mode:
+            self.exit_resize_mode()
+            event.ignore()
+            return
+        
         if hasattr(self, '_filter_timer') and self._filter_timer:
             self._filter_timer.stop()
         if hasattr(self, '_resize_timer') and self._resize_timer:

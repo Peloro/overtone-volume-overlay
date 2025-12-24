@@ -32,10 +32,10 @@ Overtone is a sleek, always-on-top volume mixer overlay that provides quick acce
 <td width="50%">
 
 ### Audio Control
-- **Per-Application Volume** — Individual sliders for each running application
-- **Master Volume Control** — Quick system-wide volume adjustment
-- **One-Click Mute** — Instantly mute/unmute any application
-- **Precise Input** — Click percentages to type exact values
+- **Per-Application Volume** - Individual sliders for each running application
+- **Master Volume Control** - Quick system-wide volume adjustment
+- **One-Click Mute** - Instantly mute/unmute any application
+- **Precise Input** - Click percentages to type exact values
 
 <br>
 
@@ -43,10 +43,10 @@ Overtone is a sleek, always-on-top volume mixer overlay that provides quick acce
 <td width="50%">
 
 ### Productivity
-- **Global Hotkeys** — Customizable keyboard shortcuts
-- **Always-on-Top** — Draggable overlay that stays visible
-- **System Tray** — Runs quietly in the background
-- **Quick Filter** — Search applications by name
+- **Global Hotkeys** - Customizable keyboard shortcuts
+- **Always-on-Top** - Draggable overlay that stays visible
+- **System Tray** - Runs quietly in the background
+- **Quick Filter** - Search applications by name
 
 <br>
 
@@ -56,9 +56,9 @@ Overtone is a sleek, always-on-top volume mixer overlay that provides quick acce
 <td width="50%">
 
 ### Customization
-- **Theme Editor** — Customize all colors and appearance
-- **Profile System** — Multiple configurations for different use cases
-- **Persistent Settings** — All preferences saved automatically
+- **Theme Editor** - Customize all colors and appearance
+- **Profile System** - Multiple configurations for different use cases
+- **Persistent Settings** - All preferences saved automatically
 
 <br>
 
@@ -66,9 +66,9 @@ Overtone is a sleek, always-on-top volume mixer overlay that provides quick acce
 <td width="50%">
 
 ### User Experience
-- **Lightweight** — Minimal resource footprint
-- **Native Look** — Clean, modern Windows aesthetic
-- **Paginated View** — Navigate through many applications easily
+- **Lightweight** - Minimal resource footprint
+- **Native Look** - Clean, modern Windows aesthetic
+- **Paginated View** - Navigate through many applications easily
 
 <br>
 
@@ -137,10 +137,10 @@ All settings are automatically persisted in `profiles.json` located in the appli
 
 Create multiple configuration profiles for different scenarios:
 
-- **Gaming** — Boost game audio, reduce chat volume
-- **Work** — Focus on communication apps
-- **Music** — Prioritize media players
-- **Movies** — Optimize for media consumption
+- **Gaming** - Boost game audio, reduce chat volume
+- **Work** - Focus on communication apps
+- **Music** - Prioritize media players
+- **Movies** - Optimize for media consumption
 
 Settings include window position, theme colors, hotkey bindings, and application-specific preferences.
 
@@ -166,7 +166,7 @@ Please follow [PEP 8](https://peps.python.org/pep-0008/) style guidelines for Py
 
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Author
 

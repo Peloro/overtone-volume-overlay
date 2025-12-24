@@ -2,7 +2,7 @@ import os
 from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QAction
 from PyQt5.QtGui import QIcon, QPixmap, QPainter, QColor, QPolygon
 from PyQt5.QtCore import Qt, QPoint
-from utils.logger import get_logger
+from utils import get_logger
 
 logger = get_logger(__name__)
 

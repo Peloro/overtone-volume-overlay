@@ -1,4 +1,3 @@
-from .hotkey_handler import HotkeyHandler
-from .application import VolumeOverlayApp
+from .application import VolumeOverlayApp, HotkeyHandler
 
-__all__ = ['HotkeyHandler', 'VolumeOverlayApp']
+__all__ = ['VolumeOverlayApp', 'HotkeyHandler']

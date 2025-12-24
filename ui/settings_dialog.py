@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                              QGroupBox, QFormLayout, QCheckBox, QTabWidget, QWidget, QColorDialog)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
-from config import UIConstants, AppInfo
+from config import UIConstants, AppInfo, Hotkeys
 from .hotkey_recorder import HotkeyRecorderButton
 
 
@@ -154,6 +154,25 @@ class SettingsDialog(QDialog):
         
         for group in (size_group, appearance_group, behavior_group, hotkey_group):
             settings_widget.addWidget(group)
+        
+        # Action buttons layout
+        settings_actions_layout = QHBoxLayout()
+        
+        # Save to Profile button
+        self.save_settings_btn = QPushButton("Save to Profile")
+        self.save_settings_btn.setToolTip("Save current settings to the active settings profile")
+        self.save_settings_btn.clicked.connect(self.on_save_settings_to_profile)
+        
+        # Reset Settings to Default button
+        reset_settings_btn = QPushButton("Reset Settings to Default")
+        reset_settings_btn.clicked.connect(self.on_reset_settings)
+        
+        settings_actions_layout.addStretch()
+        settings_actions_layout.addWidget(self.save_settings_btn)
+        settings_actions_layout.addWidget(reset_settings_btn)
+        settings_actions_layout.addStretch()
+        
+        settings_widget.addLayout(settings_actions_layout)
         settings_widget.addStretch()
         
         container = QWidget()
@@ -251,19 +270,28 @@ class SettingsDialog(QDialog):
         
         text_group.setLayout(text_layout)
         
+        # Action buttons layout
+        colors_actions_layout = QHBoxLayout()
+        
+        # Save to Profile button
+        self.save_colors_btn = QPushButton("Save to Profile")
+        self.save_colors_btn.setToolTip("Save current colors to the active color profile")
+        self.save_colors_btn.clicked.connect(self.on_save_colors_to_profile)
+        
         # Reset button
-        reset_colors_layout = QHBoxLayout()
         reset_colors_btn = QPushButton("Reset Colors to Default")
         reset_colors_btn.clicked.connect(self.on_reset_colors)
-        reset_colors_layout.addStretch()
-        reset_colors_layout.addWidget(reset_colors_btn)
-        reset_colors_layout.addStretch()
+        
+        colors_actions_layout.addStretch()
+        colors_actions_layout.addWidget(self.save_colors_btn)
+        colors_actions_layout.addWidget(reset_colors_btn)
+        colors_actions_layout.addStretch()
         
         colors_widget.addWidget(bg_group)
         colors_widget.addWidget(slider_group)
         colors_widget.addWidget(button_group)
         colors_widget.addWidget(text_group)
-        colors_widget.addLayout(reset_colors_layout)
+        colors_widget.addLayout(colors_actions_layout)
         colors_widget.addStretch()
         
         container = QWidget()
@@ -368,6 +396,42 @@ class SettingsDialog(QDialog):
         # Refresh the overlay to apply new colors
         self.refresh_overlay_colors()
     
+    def on_reset_settings(self):
+        """Reset all settings to default values"""
+        defaults = {
+            "overlay_width": UIConstants.DEFAULT_OVERLAY_WIDTH,
+            "overlay_height": UIConstants.DEFAULT_OVERLAY_HEIGHT,
+            "overlay_opacity": UIConstants.DEFAULT_OPACITY,
+            "hotkey_open": Hotkeys.DEFAULT_HOTKEY_OPEN,
+            "hotkey_settings": Hotkeys.DEFAULT_HOTKEY_SETTINGS,
+            "hotkey_quit": Hotkeys.DEFAULT_HOTKEY_QUIT,
+            "confirm_on_quit": True,
+            "show_system_volume": True,
+            "always_show_filter": False,
+        }
+        
+        self.app.settings_manager.update(defaults)
+        
+        # Update all UI elements
+        self.width_spin.setValue(defaults["overlay_width"])
+        self.height_spin.setValue(defaults["overlay_height"])
+        self.opacity_spin.setValue(defaults["overlay_opacity"])
+        self.hotkey_open_btn.set_hotkey(defaults["hotkey_open"])
+        self.hotkey_settings_btn.set_hotkey(defaults["hotkey_settings"])
+        self.hotkey_quit_btn.set_hotkey(defaults["hotkey_quit"])
+        self.confirm_quit_checkbox.setChecked(defaults["confirm_on_quit"])
+        self.show_system_volume_checkbox.setChecked(defaults["show_system_volume"])
+        self.always_show_filter_checkbox.setChecked(defaults["always_show_filter"])
+        
+        # Refresh overlay
+        self.app.overlay.resize(defaults["overlay_width"], defaults["overlay_height"])
+        self.app.overlay.update_background_opacity()
+        self.app.overlay.update_system_volume_visibility()
+        self.app.overlay.update_filter_display_mode()
+        
+        # Reapply hotkeys
+        self.app.setup_hotkeys()
+
     def refresh_overlay_colors(self):
         """Refresh overlay to apply new colors"""
         if hasattr(self.app, 'overlay'):
@@ -944,6 +1008,34 @@ class SettingsDialog(QDialog):
         self.app.settings_manager.set(setting_key, new_hotkey)
         self.app.settings_manager.save_settings(debounce=False)
         self.app.setup_hotkeys()
+    
+    def on_save_settings_to_profile(self) -> None:
+        """Save current settings to the active settings profile"""
+        from PyQt5.QtWidgets import QMessageBox
+        
+        active_profile = self.app.settings_manager.get_active_settings_profile_name()
+        self.app.settings_manager.save_to_settings_profile(active_profile)
+        self.has_unsaved_settings_changes = False
+        self.refresh_settings_profile_list()
+        
+        QMessageBox.information(
+            self, "Saved",
+            f"Settings saved to profile '{active_profile}'."
+        )
+    
+    def on_save_colors_to_profile(self) -> None:
+        """Save current colors to the active color profile"""
+        from PyQt5.QtWidgets import QMessageBox
+        
+        active_profile = self.app.settings_manager.get_active_color_profile_name()
+        self.app.settings_manager.save_to_color_profile(active_profile)
+        self.has_unsaved_color_changes = False
+        self.refresh_color_profile_list()
+        
+        QMessageBox.information(
+            self, "Saved",
+            f"Colors saved to profile '{active_profile}'."
+        )
     
     def enter_resize_mode(self) -> None:
         """Enter resize mode - makes the overlay window resizable"""

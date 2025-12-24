@@ -4,8 +4,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtCore import Qt, QPoint, QTimer
 
 from config import UIConstants, Colors, StyleSheets
-from utils import create_standard_button, batch_update
-from utils.logger import get_logger
+from utils import create_standard_button, batch_update, get_logger
 from .app_control import AppVolumeControl
 from .master_control import MasterVolumeControl
 

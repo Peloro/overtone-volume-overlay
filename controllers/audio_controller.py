@@ -12,7 +12,7 @@ import os
 import sys
 
 from config import UIConstants
-from utils.logger import get_logger
+from utils import get_logger
 
 logger = get_logger(__name__)
 

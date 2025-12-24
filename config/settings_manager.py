@@ -2,9 +2,9 @@ import json
 import os
 from typing import Dict, Any
 from PyQt5.QtCore import QTimer
-from .ui_constants import UIConstants, Hotkeys
+from .constants import UIConstants, Hotkeys
 from .profiles_manager import SettingsProfilesManager, ColorProfilesManager
-from utils.logger import get_logger
+from utils import get_logger
 
 logger = get_logger(__name__)
 

@@ -2,7 +2,7 @@ from typing import Callable
 from PyQt5.QtWidgets import QWidget, QSlider, QPushButton, QLineEdit
 from PyQt5.QtCore import QTimer
 from config import UIConstants
-from utils.logger import get_logger
+from utils import get_logger
 
 logger = get_logger(__name__)
 

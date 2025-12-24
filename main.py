@@ -3,8 +3,7 @@ import traceback
 import atexit
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtCore import Qt
-from utils.logger import setup_logger
-from utils import set_window_icon
+from utils import setup_logger, set_window_icon
 
 logger = setup_logger("overtone", "overtone.log")
 

@@ -3,18 +3,23 @@ Main Overtone Application Class
 Coordinates all components and manages application lifecycle
 """
 import sys
-from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtCore import QTimer, Qt, QObject, pyqtSignal
 from PyQt5.QtWidgets import QMessageBox, QApplication
 import keyboard
 
 from config import SettingsManager, UIConstants, Colors
 from controllers import AudioController
 from ui import VolumeOverlay, SystemTrayIcon
-from .hotkey_handler import HotkeyHandler
-from utils.logger import get_logger
-from utils import batch_update
+from utils import get_logger, batch_update
 
 logger = get_logger(__name__)
+
+
+class HotkeyHandler(QObject):
+    """Handles hotkey signals for cross-thread communication"""
+    toggle_signal = pyqtSignal()
+    settings_signal = pyqtSignal()
+    quit_signal = pyqtSignal()
 
 
 class VolumeOverlayApp:

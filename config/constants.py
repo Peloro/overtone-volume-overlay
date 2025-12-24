@@ -1,5 +1,169 @@
-from .app_info import AppInfo
-from .ui_constants import UIConstants, Hotkeys
+"""Configuration constants for the Overtone application"""
+
+
+class AppInfo:
+    APP_NAME = "Overtone"
+    VERSION = "0.5"
+    DESCRIPTION = "A modern, lightweight volume mixer overlay for Windows with per-application volume control. If you like the " \
+    "project, feel free to star and watch the repository on GitHub!"
+    AUTHOR = "Peloro"
+    GITHUB_URL = "https://github.com/Peloro"
+    REPO_URL = "https://github.com/Peloro/overtone-volume-overlay"
+    LICENSE = "MIT License"
+    YEAR = "2025"
+    ICON_FILE = "icon2_black.ico"
+
+
+class UIConstants:
+    DEFAULT_OVERLAY_WIDTH = 300
+    DEFAULT_OVERLAY_HEIGHT = 350
+    MIN_OVERLAY_WIDTH = 300
+    MIN_OVERLAY_HEIGHT = 350
+    MAX_OVERLAY_WIDTH = 1000
+    MAX_OVERLAY_HEIGHT = 1000
+    
+    APP_CONTROL_HEIGHT = 68
+    TITLE_BAR_HEIGHT = 50
+    MASTER_VOLUME_HEIGHT = 80
+    FILTER_BAR_HEIGHT = 35
+    PAGINATION_HEIGHT = 30
+    WINDOW_MARGINS = 40
+    RESERVED_HEIGHT = 235
+    
+    BUTTON_SIZE = 30
+    BUTTON_HEIGHT = 24
+    VOLUME_TEXT_WIDTH = 40
+    
+    REFRESH_INTERVAL = 5000
+    FILTER_DEBOUNCE_MS = 150
+    ERROR_FLASH_DURATION_MS = 300
+    NAME_CACHE_TTL_SECONDS = 30.0
+    
+    DEFAULT_OPACITY = 0.95
+    MIN_OPACITY = 0.1
+    MAX_OPACITY = 1.0
+    
+    TITLE_FONT_SIZE = 14
+    LABEL_FONT_SIZE = 11
+    BUTTON_FONT_SIZE = 16
+    CLOSE_BUTTON_FONT_SIZE = 20
+    ICON_FONT_SIZE = 14
+    
+    LAYOUT_MARGIN = 10
+    LAYOUT_SPACING = 5
+    FRAME_MARGIN = 5
+    FRAME_SPACING = 3
+    CONTROL_SPACING = 5
+    
+    WINDOW_RADIUS = 10
+    FRAME_RADIUS = 5
+    BUTTON_RADIUS = 15
+    SMALL_BUTTON_RADIUS = 3
+    SLIDER_RADIUS = 3
+    HANDLE_RADIUS = 7
+    
+    MIN_CONTROL_WIDTH = 200
+    MIN_SLIDER_WIDTH = 80
+    
+    VOLUME_PERCENTAGE_FACTOR = 100
+    
+    ICON_SIZE_16 = 16
+    ICON_SIZE_24 = 24
+    ICON_SIZE_32 = 32
+    ICON_SIZE_48 = 48
+    FALLBACK_ICON_SIZE = 32
+    
+    TEXT_ELIDE_WIDTH = 280
+    
+    QUIT_DELAY_MS = 100
+    RESIZE_DEBOUNCE_MS = 100
+    
+    SETTINGS_SAVE_DEBOUNCE_MS = 500
+    OPACITY_DECIMAL_PLACES = 2
+    
+    LOG_MAX_BYTES = 5 * 1024 * 1024
+    LOG_BACKUP_COUNT = 3
+    
+    JSON_INDENT = 4
+    
+    MAX_CACHE_SIZE = 100
+    CACHE_CLEANUP_BATCH_SIZE = 20
+    
+    MARGIN_SIDES_COUNT = 4
+    RGBA_COMPONENT_COUNT = 4
+    
+    SETTINGS_MIN_WIDTH = 450
+    COLOR_BUTTON_MIN_HEIGHT = 30
+    COLOR_BUTTON_MIN_WIDTH = 90
+    COLOR_BUTTON_FONT_SIZE = 8
+    
+    WHEEL_SCROLL_DELTA = 5
+    PAGINATION_LABEL_PADDING_H = 10
+    FILTER_INPUT_PADDING_V = 5
+    FILTER_INPUT_PADDING_H = 8
+    
+    SLIDER_HEIGHT = 20
+    SLIDER_HANDLE_WIDTH = 14
+    SLIDER_HANDLE_HEIGHT = 14
+    SLIDER_HANDLE_MARGIN_OFFSET = -7
+    SLIDER_GROOVE_HEIGHT = 6
+    SLIDER_GROOVE_MARGIN = 7
+    SLIDER_GROOVE_MARGIN_ZERO = 0
+    
+    MASTER_SLIDER_BORDER_WIDTH = 2
+    MASTER_SLIDER_MARGIN = -5
+    APP_SLIDER_BORDER_WIDTH = 1
+    APP_SLIDER_MARGIN = -4
+    
+    OPACITY_STEP = 0.05
+    
+    STANDARD_BORDER_WIDTH = 1
+    THICK_BORDER_WIDTH = 2
+    
+    STANDARD_PADDING = 3
+    SMALL_PADDING = 2
+    MEDIUM_PADDING = 5
+    LARGE_PADDING = 8
+    XLARGE_PADDING = 10
+    BUTTON_PADDING_H = 15
+    TAB_PADDING_H = 20
+    
+    CLEAR_BUTTON_FONT_SIZE = 16
+    SETTINGS_ABOUT_TITLE_FONT_SIZE = 12
+    SETTINGS_ABOUT_DESCRIPTION_FONT_SIZE = 12
+    SETTINGS_ABOUT_FOOTER_FONT_SIZE = 11
+    SETTINGS_INFO_FONT_SIZE = 10
+    
+    STRETCH_FACTOR_NONE = 0
+    STRETCH_FACTOR_STANDARD = 1
+    
+    WINDOW_START_X = 0
+    WINDOW_START_Y = 0
+    
+    SETTINGS_MARGIN_STANDARD = 10
+    SETTINGS_MARGIN_TOP = 10
+    SETTINGS_MARGIN_TOP_LARGE = 15
+    SETTINGS_PADDING_SMALL = 5
+    SETTINGS_PADDING_STANDARD = 8
+    
+    TAB_MARGIN_RIGHT = 2
+    
+    GROUP_BOX_BORDER_WIDTH = 2
+    GROUP_BOX_MARGIN_TOP = 10
+    GROUP_BOX_PADDING_TOP = 10
+    GROUP_BOX_TITLE_LEFT = 10
+    GROUP_BOX_TITLE_PADDING = 5
+    
+    ALPHA_CHANNEL_MAX = 255
+
+
+class Hotkeys:
+    DEFAULT_HOTKEY_OPEN = "ctrl+/"
+    DEFAULT_HOTKEY_SETTINGS = "ctrl+shift+s"
+    DEFAULT_HOTKEY_QUIT = "ctrl+q"
+
+
+# Import Colors and StyleSheets for backwards compatibility
 from .colors import Colors
 from .styles import StyleSheets
 

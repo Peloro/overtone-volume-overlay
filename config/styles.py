@@ -1,4 +1,4 @@
-from .ui_constants import UIConstants
+from .constants import UIConstants
 from .colors import Colors
 
 

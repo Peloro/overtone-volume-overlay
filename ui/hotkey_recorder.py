@@ -185,15 +185,25 @@ class HotkeyRecorderButton(QPushButton):
         if key in self._KEY_MAP:
             return self._KEY_MAP[key]
         
-        # For regular letter/number keys, use the text
-        text = event.text().lower()
-        if text and text.isalnum():
-            return text
+        # For letter keys (A-Z), use the key code directly
+        # Qt.Key_A is 0x41 (65), Qt.Key_Z is 0x5a (90)
+        if Qt.Key_A <= key <= Qt.Key_Z:
+            return chr(key).lower()
         
-        # Try to get key name from Qt
-        key_text = event.text()
-        if key_text and len(key_text) == 1:
-            return key_text.lower()
+        # For number keys (0-9)
+        # Qt.Key_0 is 0x30 (48), Qt.Key_9 is 0x39 (57)
+        if Qt.Key_0 <= key <= Qt.Key_9:
+            return chr(key)
+        
+        # For numpad keys
+        if Qt.Key_0 <= key - 0x30 <= 9:  # Numpad keys offset
+            return str(key - Qt.Key_0)
+        
+        # Fallback: try to get key name from text (for other characters)
+        # Only use text if it's a printable character (not a control character)
+        text = event.text()
+        if text and len(text) == 1 and text.isprintable():
+            return text.lower()
         
         return None
     

@@ -35,15 +35,15 @@ class SettingsDialog(QDialog):
         settings_tab = self.create_settings_tab()
         tab_widget.addTab(settings_tab, "Settings")
         
+        # Settings Profiles tab (next to Settings)
+        settings_profiles_tab = self.create_settings_profiles_tab()
+        tab_widget.addTab(settings_profiles_tab, "Settings Profiles")
+        
         # Colors tab
         colors_tab = self.create_colors_tab()
         tab_widget.addTab(colors_tab, "Colors")
         
-        # Settings Profiles tab
-        settings_profiles_tab = self.create_settings_profiles_tab()
-        tab_widget.addTab(settings_profiles_tab, "Settings Profiles")
-        
-        # Color Profiles tab
+        # Color Profiles tab (next to Colors)
         color_profiles_tab = self.create_color_profiles_tab()
         tab_widget.addTab(color_profiles_tab, "Color Profiles")
         

@@ -86,7 +86,7 @@ Overtone is a sleek, always-on-top volume mixer overlay that provides quick acce
 ### Quick Start
 
 ```bash
-# Clone the repository
+# Clone or download the repository
 git clone https://github.com/Peloro/overtone-volume-overlay.git
 
 # Navigate to the project directory

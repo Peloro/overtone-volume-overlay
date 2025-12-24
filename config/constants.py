@@ -163,8 +163,7 @@ class Hotkeys:
     DEFAULT_HOTKEY_QUIT = "ctrl+q"
 
 
-# Import Colors and StyleSheets for backwards compatibility
-from .colors import Colors
-from .styles import StyleSheets
+# Note: Colors and StyleSheets are imported in config/__init__.py
+# Do not import them here to avoid circular imports
 
-__all__ = ['AppInfo', 'UIConstants', 'Hotkeys', 'Colors', 'StyleSheets']
+__all__ = ['AppInfo', 'UIConstants', 'Hotkeys']

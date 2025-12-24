@@ -18,6 +18,7 @@ import json
 import os
 from typing import Dict, Any, List
 from utils import get_logger
+from .defaults import get_default_settings, get_default_colors, SETTINGS_KEYS, COLOR_KEYS
 
 logger = get_logger(__name__)
 
@@ -28,51 +29,10 @@ DEFAULT_PROFILE_NAME = "Default"
 class UnifiedProfilesManager:
     """Manages both settings and color profiles in a single file."""
     
-    SETTINGS_KEYS = [
-        "overlay_width", "overlay_height", "overlay_opacity",
-        "hotkey_open", "hotkey_settings", "hotkey_quit",
-        "confirm_on_quit", "show_system_volume", "always_show_filter",
-    ]
-    
-    COLOR_KEYS = [
-        "color_main_background", "color_title_bar_bg", "color_master_frame_bg",
-        "color_container_bg", "color_app_control_bg", "color_master_slider_handle",
-        "color_app_slider_handle", "color_primary_button_bg", "color_close_button_bg",
-        "color_text_white",
-    ]
-    
     def __init__(self, profiles_file: str = None):
         self.profiles_file = profiles_file or PROFILES_FILE
         self.data = {"settings": {}, "colors": {}}
         self._load()
-    
-    def _get_default_settings(self) -> Dict[str, Any]:
-        from .constants import UIConstants, Hotkeys
-        return {
-            "overlay_width": UIConstants.DEFAULT_OVERLAY_WIDTH,
-            "overlay_height": UIConstants.DEFAULT_OVERLAY_HEIGHT,
-            "overlay_opacity": UIConstants.DEFAULT_OPACITY,
-            "hotkey_open": Hotkeys.DEFAULT_HOTKEY_OPEN,
-            "hotkey_settings": Hotkeys.DEFAULT_HOTKEY_SETTINGS,
-            "hotkey_quit": Hotkeys.DEFAULT_HOTKEY_QUIT,
-            "confirm_on_quit": True,
-            "show_system_volume": True,
-            "always_show_filter": False,
-        }
-    
-    def _get_default_colors(self) -> Dict[str, Any]:
-        return {
-            "color_main_background": "rgba(30, 30, 30, {alpha})",
-            "color_title_bar_bg": "rgba(43, 43, 43, 255)",
-            "color_master_frame_bg": "rgba(30, 58, 95, 255)",
-            "color_container_bg": "rgba(43, 43, 43, 255)",
-            "color_app_control_bg": "rgba(50, 50, 50, 200)",
-            "color_master_slider_handle": "#4caf50",
-            "color_app_slider_handle": "#1e88e5",
-            "color_primary_button_bg": "#1e88e5",
-            "color_close_button_bg": "#d32f2f",
-            "color_text_white": "white",
-        }
     
     def _load(self) -> None:
         """Load profiles from file."""
@@ -88,8 +48,8 @@ class UnifiedProfilesManager:
             self.data = {"settings": {}, "colors": {}}
         
         # Ensure structure exists
-        self._ensure_defaults("settings", self._get_default_settings)
-        self._ensure_defaults("colors", self._get_default_colors)
+        self._ensure_defaults("settings", get_default_settings)
+        self._ensure_defaults("colors", get_default_colors)
         self._save()
     
     def _ensure_defaults(self, section: str, get_defaults) -> None:
@@ -125,10 +85,10 @@ class UnifiedProfilesManager:
         return self.data["settings" if profile_type == "settings" else "colors"]
     
     def _get_valid_keys(self, profile_type: str) -> List[str]:
-        return self.SETTINGS_KEYS if profile_type == "settings" else self.COLOR_KEYS
+        return SETTINGS_KEYS if profile_type == "settings" else COLOR_KEYS
     
     def _get_defaults(self, profile_type: str) -> Dict[str, Any]:
-        return self._get_default_settings() if profile_type == "settings" else self._get_default_colors()
+        return get_default_settings() if profile_type == "settings" else get_default_colors()
     
     def get_profile_names(self, profile_type: str) -> List[str]:
         return list(self._get_section(profile_type)["profiles"].keys())
@@ -280,7 +240,3 @@ class ColorProfilesManager:
     
     def is_default_profile(self, name: str) -> bool:
         return self._manager.is_default_profile(name)
-
-
-# For backwards compatibility
-BaseProfilesManager = UnifiedProfilesManager

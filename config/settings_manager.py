@@ -3,6 +3,7 @@ import os
 from typing import Dict, Any
 from PyQt5.QtCore import QTimer
 from .constants import UIConstants, Hotkeys
+from .defaults import get_default_settings, get_default_colors
 from .profiles_manager import SettingsProfilesManager, ColorProfilesManager
 from utils import get_logger
 
@@ -13,8 +14,8 @@ class SettingsManager:
     
     def __init__(self):
         self.settings: Dict[str, Any] = {}
-        self._default_settings = self._get_default_settings()
-        self._default_colors = self._get_default_colors()
+        self._default_settings = get_default_settings()
+        self._default_colors = get_default_colors()
         self._save_timer: QTimer = None
         self._save_debounce_ms = UIConstants.SETTINGS_SAVE_DEBOUNCE_MS
         
@@ -29,37 +30,6 @@ class SettingsManager:
             self._save_timer = QTimer()
             self._save_timer.setSingleShot(True)
             self._save_timer.timeout.connect(self._do_save_settings)
-    
-    @staticmethod
-    def _get_default_settings() -> Dict[str, Any]:
-        """Get default non-color settings."""
-        return {
-            "overlay_width": UIConstants.DEFAULT_OVERLAY_WIDTH,
-            "overlay_height": UIConstants.DEFAULT_OVERLAY_HEIGHT,
-            "overlay_opacity": UIConstants.DEFAULT_OPACITY,
-            "hotkey_open": Hotkeys.DEFAULT_HOTKEY_OPEN,
-            "hotkey_settings": Hotkeys.DEFAULT_HOTKEY_SETTINGS,
-            "hotkey_quit": Hotkeys.DEFAULT_HOTKEY_QUIT,
-            "confirm_on_quit": True,
-            "show_system_volume": True,
-            "always_show_filter": False,
-        }
-    
-    @staticmethod
-    def _get_default_colors() -> Dict[str, Any]:
-        """Get default color settings."""
-        return {
-            "color_main_background": "rgba(30, 30, 30, {alpha})",
-            "color_title_bar_bg": "rgba(43, 43, 43, 255)",
-            "color_master_frame_bg": "rgba(30, 58, 95, 255)",
-            "color_container_bg": "rgba(43, 43, 43, 255)",
-            "color_app_control_bg": "rgba(50, 50, 50, 200)",
-            "color_master_slider_handle": "#4caf50",
-            "color_app_slider_handle": "#1e88e5",
-            "color_primary_button_bg": "#1e88e5",
-            "color_close_button_bg": "#d32f2f",
-            "color_text_white": "white",
-        }
     
     def load_settings(self) -> None:
         """Load settings from both profile managers."""
@@ -266,38 +236,3 @@ class SettingsManager:
     def is_default_color_profile(self, profile_name: str) -> bool:
         """Check if a color profile is the default."""
         return self.color_profiles_manager.is_default_profile(profile_name)
-    
-    # ========== Legacy compatibility methods ==========
-    # These are kept for backward compatibility with existing code
-    
-    def get_active_profile_name(self) -> str:
-        """Legacy: Get the active settings profile name."""
-        return self.get_active_settings_profile_name()
-    
-    def get_profile_names(self) -> list:
-        """Legacy: Get all settings profile names."""
-        return self.get_settings_profile_names()
-    
-    def switch_profile(self, profile_name: str) -> bool:
-        """Legacy: Switch to a different settings profile."""
-        return self.switch_settings_profile(profile_name)
-    
-    def create_profile(self, profile_name: str, base_on_current: bool = True) -> bool:
-        """Legacy: Create a new settings profile."""
-        return self.create_settings_profile(profile_name, base_on_current)
-    
-    def delete_profile(self, profile_name: str) -> bool:
-        """Legacy: Delete a settings profile."""
-        return self.delete_settings_profile(profile_name)
-    
-    def rename_profile(self, old_name: str, new_name: str) -> bool:
-        """Legacy: Rename a settings profile."""
-        return self.rename_settings_profile(old_name, new_name)
-    
-    def save_to_profile(self, profile_name: str) -> bool:
-        """Legacy: Save current settings to a settings profile."""
-        return self.save_to_settings_profile(profile_name)
-    
-    def is_default_profile(self, profile_name: str) -> bool:
-        """Legacy: Check if a settings profile is the default."""
-        return self.is_default_settings_profile(profile_name)

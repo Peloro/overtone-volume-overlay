@@ -1,3 +1,23 @@
+from .defaults import get_default_colors
+
+
+def _build_defaults_dict():
+    """Build the _DEFAULTS dict from centralized defaults."""
+    defaults = get_default_colors()
+    return {
+        "MAIN_BACKGROUND": defaults["color_main_background"],
+        "TITLE_BAR_BG": defaults["color_title_bar_bg"],
+        "MASTER_FRAME_BG": defaults["color_master_frame_bg"],
+        "CONTAINER_BG": defaults["color_container_bg"],
+        "APP_CONTROL_BG": defaults["color_app_control_bg"],
+        "MASTER_SLIDER_HANDLE": defaults["color_master_slider_handle"],
+        "APP_SLIDER_HANDLE": defaults["color_app_slider_handle"],
+        "PRIMARY_BUTTON_BG": defaults["color_primary_button_bg"],
+        "CLOSE_BUTTON_BG": defaults["color_close_button_bg"],
+        "TEXT_WHITE": defaults["color_text_white"],
+    }
+
+
 class ColorsMeta(type):
     def __getattribute__(cls, name):
         customizable = {
@@ -21,19 +41,7 @@ class ColorsMeta(type):
 
 class Colors(metaclass=ColorsMeta):
     _settings_manager = None
-    
-    _DEFAULTS = {
-        "MAIN_BACKGROUND": "rgba(30, 30, 30, {alpha})",
-        "TITLE_BAR_BG": "rgba(43, 43, 43, 255)",
-        "MASTER_FRAME_BG": "rgba(30, 58, 95, 255)",
-        "CONTAINER_BG": "rgba(43, 43, 43, 255)",
-        "APP_CONTROL_BG": "rgba(50, 50, 50, 200)",
-        "MASTER_SLIDER_HANDLE": "#4caf50",
-        "APP_SLIDER_HANDLE": "#1e88e5",
-        "PRIMARY_BUTTON_BG": "#1e88e5",
-        "CLOSE_BUTTON_BG": "#d32f2f",
-        "TEXT_WHITE": "white",
-    }
+    _DEFAULTS = _build_defaults_dict()
     
     DIALOG_BG = "#2b2b2b"
     INPUT_BG = "#424242"

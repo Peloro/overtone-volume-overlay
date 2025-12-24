@@ -1,5 +1,5 @@
 # Settings file
-settings.json
+profiles.json
 
 # Python cache
 __pycache__/

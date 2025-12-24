@@ -103,11 +103,11 @@ python main.py
 
 | Package | Version | Description |
 |---------|---------|-------------|
-| PyQt5 | 5.15.10 | GUI framework |
-| pycaw | 20230407 | Windows audio control |
-| comtypes | 1.2.0 | COM interface support |
-| keyboard | 0.13.5 | Global hotkey handling |
-| pywin32 | 306 | Windows API bindings |
+| **PyQt5** | 5.15.10 | GUI framework |
+| **pycaw** | 20230407 | Windows audio control |
+| **comtypes** | 1.2.0 | COM interface support |
+| **keyboard** | 0.13.5 | Global hotkey handling |
+| **pywin32** | 306 | Windows API bindings |
 
 ## Usage
 

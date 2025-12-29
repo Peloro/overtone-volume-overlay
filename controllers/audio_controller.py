@@ -10,6 +10,7 @@ import win32process
 import win32api
 import os
 import sys
+import gc
 
 from config import UIConstants
 from utils import get_logger
@@ -19,6 +20,15 @@ logger = get_logger(__name__)
 SessionDict: TypeAlias = Dict[str, Any]
 PIDList: TypeAlias = List[int]
 CacheDict: TypeAlias = Dict[int, str]
+
+# Module-level flag to detect interpreter shutdown
+_interpreter_shutting_down = False
+
+def _set_shutdown_flag():
+    global _interpreter_shutting_down
+    _interpreter_shutting_down = True
+
+atexit.register(_set_shutdown_flag)
 
 
 class AudioController:
@@ -305,6 +315,7 @@ class AudioController:
         if self._cleaned_up:
             return
         
+        self._cleaned_up = True
         logger.debug("Starting audio controller cleanup")
         
         try:
@@ -328,45 +339,54 @@ class AudioController:
             
             if hasattr(self, 'master_volume') and self.master_volume is not None:
                 try:
+                    # Explicitly release COM reference before garbage collection
+                    # This prevents the "COM method call without VTable" error
                     master_vol_ref = self.master_volume
                     self.master_volume = None
                     
+                    # Try to release COM reference explicitly if not shutting down
                     if not self._is_shutting_down:
                         try:
-                            del master_vol_ref
-                        except Exception as e:
-                            logger.debug(f"Error deleting master_vol_ref: {e}")
-                    else:
-                        del master_vol_ref
+                            if hasattr(master_vol_ref, 'Release'):
+                                master_vol_ref.Release()
+                        except (COMError, ValueError, OSError):
+                            pass  # Ignore COM errors during release
+                    
+                    # Clear the reference
+                    del master_vol_ref
                     
                     logger.debug("Master volume interface cleared")
-                except (COMError, ValueError) as e:
+                except (COMError, ValueError, OSError) as e:
                     logger.debug(f"COM cleanup error (expected during shutdown): {e}")
                 except Exception as e:
                     logger.debug(f"Error clearing master volume interface: {e}")
             
+            # Force garbage collection before COM is torn down
             if not self._is_shutting_down:
                 try:
-                    import gc
                     gc.collect()
                     logger.debug("Forced garbage collection for COM cleanup")
                 except Exception as e:
                     logger.debug(f"Error during garbage collection: {e}")
             
-            self._cleaned_up = True
             logger.debug("Audio controller cleanup completed")
             
         except Exception as e:
             logger.error(f"Error during cleanup: {e}", exc_info=True)
-            self._cleaned_up = True
     
     def __del__(self):
+        # During interpreter shutdown, many modules may already be None
+        # Use the module-level flag to detect shutdown
+        # Simply suppress all exceptions to avoid the VTable error
+        if _interpreter_shutting_down:
+            return  # Don't do anything during interpreter shutdown
+        
         try:
-            # Simplified check - sys module should always be available
-            if not getattr(self, '_cleaned_up', False):
+            if not getattr(self, '_cleaned_up', True):
                 self._is_shutting_down = True
-                self._safe_cleanup()
-        except Exception as e:
-            # Suppress exceptions during interpreter shutdown
-            if sys and hasattr(sys, 'stderr'):
-                logger.debug(f"Error in AudioController destructor: {e}")
+                # Don't call cleanup in __del__ during shutdown - it's too late
+                # Just null out the reference to prevent the COM release
+                if hasattr(self, 'master_volume'):
+                    self.master_volume = None
+        except Exception:
+            pass  # Suppress all exceptions during interpreter shutdown

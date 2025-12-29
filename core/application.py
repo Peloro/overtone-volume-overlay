@@ -150,10 +150,9 @@ class VolumeOverlayApp:
             self.show_overlay()
     
     def show_overlay(self) -> None:
-        """Show the overlay"""
+        """Show the overlay without stealing focus from fullscreen apps"""
         self.refresh_applications()
         self.overlay.show()
-        self.overlay.activateWindow()
         self.overlay.raise_()
         # Force page display update after showing
         self.overlay.update_page_display()

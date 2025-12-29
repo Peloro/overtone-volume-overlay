@@ -1,4 +1,5 @@
 from typing import Dict, List, Any
+import sys
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QFrame, QLineEdit)
 from PyQt5.QtCore import Qt, QPoint, QTimer
@@ -7,6 +8,21 @@ from config import UIConstants, Colors, StyleSheets
 from utils import create_standard_button, batch_update, get_logger
 from .app_control import AppVolumeControl
 from .master_control import MasterVolumeControl
+
+# Windows API constants for no-activate window
+if sys.platform == 'win32':
+    import ctypes
+    from ctypes import wintypes
+    
+    GWL_EXSTYLE = -20
+    WS_EX_NOACTIVATE = 0x08000000
+    WS_EX_APPWINDOW = 0x00040000
+    
+    user32 = ctypes.windll.user32
+    user32.GetWindowLongW.argtypes = [wintypes.HWND, ctypes.c_int]
+    user32.GetWindowLongW.restype = ctypes.c_long
+    user32.SetWindowLongW.argtypes = [wintypes.HWND, ctypes.c_int, ctypes.c_long]
+    user32.SetWindowLongW.restype = ctypes.c_long
 
 logger = get_logger(__name__)
 
@@ -41,8 +57,9 @@ class VolumeOverlay(QWidget):
         self.init_ui()
     
     def init_ui(self):
-        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.Tool)
+        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.Tool | Qt.WindowDoesNotAcceptFocus)
         self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(Qt.WA_ShowWithoutActivating)
         self.resize(self.app.settings_manager.overlay_width, self.app.settings_manager.overlay_height)
         self.move(UIConstants.WINDOW_START_X, UIConstants.WINDOW_START_Y)
         self.setMinimumSize(UIConstants.MIN_OVERLAY_WIDTH, UIConstants.MIN_OVERLAY_HEIGHT)
@@ -123,9 +140,7 @@ class VolumeOverlay(QWidget):
         self.filter_visible = not self.filter_visible
         self.filter_bar.setVisible(self.filter_visible)
         
-        if self.filter_visible:
-            self.filter_input.setFocus()
-        else:
+        if not self.filter_visible:
             if self.filter_text:
                 self.filter_input.clear()
         
@@ -138,11 +153,13 @@ class VolumeOverlay(QWidget):
         filter_layout.setContentsMargins(*[UIConstants.FRAME_MARGIN] * UIConstants.MARGIN_SIDES_COUNT)
         
         self.filter_input = QLineEdit()
+        self.filter_input.setFocusPolicy(Qt.NoFocus)
         self.filter_input.setPlaceholderText("Filter applications...")
         self.filter_input.setStyleSheet(StyleSheets.get_filter_input_stylesheet())
         self.filter_input.textChanged.connect(self.on_filter_changed)
         
         self.clear_filter_button = QPushButton("×")
+        self.clear_filter_button.setFocusPolicy(Qt.NoFocus)
         self.clear_filter_button.setFixedSize(UIConstants.BUTTON_HEIGHT, UIConstants.BUTTON_HEIGHT)
         self.clear_filter_button.setStyleSheet(StyleSheets.get_clear_filter_button_stylesheet())
         self.clear_filter_button.clicked.connect(self.clear_filter)
@@ -191,7 +208,7 @@ class VolumeOverlay(QWidget):
         self._original_pos = self.pos()
         
         # Change window flags to allow resizing (remove frameless)
-        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.Tool)
+        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.Tool | Qt.WindowDoesNotAcceptFocus)
         
         # Update title to indicate resize mode
         self.title_label.setText("Overtone - Resize Mode")
@@ -273,7 +290,7 @@ class VolumeOverlay(QWidget):
         self._show_title_bar_buttons()
         
         # Restore frameless window flags
-        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.Tool)
+        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.Tool | Qt.WindowDoesNotAcceptFocus)
         
         # Show and restore position
         self.show()
@@ -453,6 +470,14 @@ class VolumeOverlay(QWidget):
         if hasattr(self, 'all_sessions'):
             self.update_page_display()
     
+    def event(self, event):
+        """Override to prevent window activation events"""
+        from PyQt5.QtCore import QEvent
+        # Block activation events to prevent stealing focus from fullscreen apps
+        if event.type() in (QEvent.WindowActivate, QEvent.ActivationChange):
+            return True
+        return super().event(event)
+    
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton and self.title_bar.geometry().contains(event.pos()):
             self.drag_position = event.globalPos() - self.frameGeometry().topLeft()
@@ -472,8 +497,23 @@ class VolumeOverlay(QWidget):
             self.drag_position = QPoint()
             event.accept()
     
+    def _apply_noactivate_style(self):
+        """Apply WS_EX_NOACTIVATE style on Windows to prevent focus stealing from fullscreen apps"""
+        if sys.platform == 'win32':
+            try:
+                hwnd = int(self.winId())
+                ex_style = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+                # Add NOACTIVATE and remove APPWINDOW to prevent activation
+                new_style = (ex_style | WS_EX_NOACTIVATE) & ~WS_EX_APPWINDOW
+                user32.SetWindowLongW(hwnd, GWL_EXSTYLE, new_style)
+                logger.debug("Applied WS_EX_NOACTIVATE style for fullscreen compatibility")
+            except Exception as e:
+                logger.warning(f"Failed to apply WS_EX_NOACTIVATE style: {e}")
+    
     def showEvent(self, event):
         super().showEvent(event)
+        # Apply no-activate style to prevent minimizing fullscreen apps
+        self._apply_noactivate_style()
         self.refresh_applications()
         # Force immediate page display update when shown
         self.update_page_display()

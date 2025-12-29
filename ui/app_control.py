@@ -71,6 +71,7 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         control_layout.setSpacing(UIConstants.CONTROL_SPACING)
         
         self.slider = QSlider(Qt.Horizontal)
+        self.slider.setFocusPolicy(Qt.NoFocus)
         self.slider.setMinimum(0)
         self.slider.setMaximum(UIConstants.VOLUME_PERCENTAGE_FACTOR)
         self.slider.setValue(int(self.session['volume'] * UIConstants.VOLUME_PERCENTAGE_FACTOR))
@@ -81,6 +82,7 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
                                        UIConstants.STRETCH_FACTOR_NONE, UIConstants.STRETCH_FACTOR_NONE)
         
         self.volume_text = QLineEdit()
+        self.volume_text.setFocusPolicy(Qt.NoFocus)
         self.volume_text.setFixedWidth(UIConstants.VOLUME_TEXT_WIDTH)
         self.volume_text.setMinimumWidth(UIConstants.VOLUME_TEXT_WIDTH)
         self.volume_text.setText(str(int(self.session['volume'] * UIConstants.VOLUME_PERCENTAGE_FACTOR)))
@@ -91,6 +93,7 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         
         is_muted = self.session.get('muted', False)
         self.mute_button = QPushButton("🔇" if is_muted else "🔊")
+        self.mute_button.setFocusPolicy(Qt.NoFocus)
         self.mute_button.setFixedSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
         self.mute_button.setMinimumSize(UIConstants.BUTTON_SIZE, UIConstants.BUTTON_HEIGHT)
         self.mute_button.setStyleSheet(StyleSheets.get_mute_button_stylesheet(is_master=False))

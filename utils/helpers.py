@@ -6,6 +6,7 @@ from typing import Callable
 from contextlib import contextmanager
 from PyQt5.QtWidgets import QPushButton, QWidget
 from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt
 
 _loggers = {}
 _DEFAULT_LOG_MAX_BYTES = 5 * 1024 * 1024
@@ -82,6 +83,7 @@ def create_button(text: str, callback: Callable, tooltip: str = "", stylesheet: 
                   fixed_width: int = None, fixed_height: int = None) -> QPushButton:
     """Create a QPushButton with optional styling and callbacks"""
     button = QPushButton(text)
+    button.setFocusPolicy(Qt.NoFocus)  # Prevent focus stealing for fullscreen compatibility
     
     if fixed_width and fixed_height:
         button.setFixedSize(fixed_width, fixed_height)

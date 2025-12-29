@@ -3,11 +3,80 @@ Settings Dialog for configuring the application
 """
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QSpinBox, QDoubleSpinBox,
-                             QGroupBox, QFormLayout, QCheckBox, QTabWidget, QWidget, QColorDialog)
-from PyQt5.QtCore import Qt
+                             QGroupBox, QFormLayout, QCheckBox, QTabWidget, QWidget, QColorDialog,
+                             QTableWidgetItem, QGraphicsOpacityEffect)
+from PyQt5.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve
 from PyQt5.QtGui import QColor
 from config import UIConstants, AppInfo, Hotkeys
 from .hotkey_recorder import HotkeyRecorderButton
+
+
+class ToastNotification(QLabel):
+    """A slick toast notification that appears and fades out"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAlignment(Qt.AlignCenter)
+        self.setStyleSheet("""
+            QLabel {
+                background-color: rgba(76, 175, 80, 0.95);
+                color: white;
+                padding: 10px 20px;
+                border-radius: 6px;
+                font-weight: bold;
+                font-size: 13px;
+            }
+        """)
+        self.hide()
+        
+        # Setup fade animation
+        self.opacity_effect = QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(self.opacity_effect)
+        self.opacity_effect.setOpacity(1.0)
+        
+        self.fade_animation = QPropertyAnimation(self.opacity_effect, b"opacity")
+        self.fade_animation.setDuration(300)
+        self.fade_animation.setEasingCurve(QEasingCurve.OutCubic)
+        self.fade_animation.finished.connect(self._on_fade_finished)
+        
+        self.hide_timer = QTimer(self)
+        self.hide_timer.setSingleShot(True)
+        self.hide_timer.timeout.connect(self._start_fade_out)
+        
+        self._is_fading_out = False
+    
+    def show_message(self, message: str, duration: int = 1500):
+        """Show a toast message that auto-hides after duration ms"""
+        self.setText(message)
+        self.adjustSize()
+        
+        # Position at bottom center of parent
+        if self.parent():
+            parent_rect = self.parent().rect()
+            x = (parent_rect.width() - self.width()) // 2
+            y = parent_rect.height() - self.height() - 20
+            self.move(x, y)
+        
+        # Reset and show
+        self._is_fading_out = False
+        self.opacity_effect.setOpacity(1.0)
+        self.show()
+        self.raise_()
+        
+        # Start hide timer
+        self.hide_timer.start(duration)
+    
+    def _start_fade_out(self):
+        """Start the fade out animation"""
+        self._is_fading_out = True
+        self.fade_animation.setStartValue(1.0)
+        self.fade_animation.setEndValue(0.0)
+        self.fade_animation.start()
+    
+    def _on_fade_finished(self):
+        """Called when fade animation finishes"""
+        if self._is_fading_out:
+            self.hide()
 
 
 class SettingsDialog(QDialog):
@@ -16,6 +85,7 @@ class SettingsDialog(QDialog):
         self.app = app
         self.has_unsaved_settings_changes = False
         self.has_unsaved_color_changes = False
+        self.toast = None  # Will be created after layout is set
         self.init_ui()
     
     def init_ui(self):
@@ -35,17 +105,13 @@ class SettingsDialog(QDialog):
         settings_tab = self.create_settings_tab()
         tab_widget.addTab(settings_tab, "Settings")
         
-        # Settings Profiles tab (next to Settings)
-        settings_profiles_tab = self.create_settings_profiles_tab()
-        tab_widget.addTab(settings_profiles_tab, "Settings Profiles")
-        
         # Colors tab
         colors_tab = self.create_colors_tab()
         tab_widget.addTab(colors_tab, "Colors")
         
-        # Color Profiles tab (next to Colors)
-        color_profiles_tab = self.create_color_profiles_tab()
-        tab_widget.addTab(color_profiles_tab, "Color Profiles")
+        # Profiles tab (contains all profile types as sub-tabs)
+        profiles_tab = self.create_profiles_tab()
+        tab_widget.addTab(profiles_tab, "Profiles")
         
         # About tab
         about_tab = self.create_about_tab()
@@ -65,7 +131,16 @@ class SettingsDialog(QDialog):
         layout.addLayout(button_layout)
         
         self.setLayout(layout)
+        
+        # Create toast notification (must be after setLayout)
+        self.toast = ToastNotification(self)
+        
         self.apply_styles()
+    
+    def show_toast(self, message: str, duration: int = 1500):
+        """Show a toast notification message"""
+        if self.toast:
+            self.toast.show_message(message, duration)
     
     def _create_group_with_form(self, title: str, form_rows: list) -> QGroupBox:
         """Create a group box with a form layout"""
@@ -443,6 +518,54 @@ class SettingsDialog(QDialog):
             if hasattr(self.app.overlay, 'refresh_applications'):
                 self.app.overlay.refresh_applications()
     
+    def create_profiles_tab(self):
+        """Create the unified profiles tab with sub-tabs for each profile type"""
+        profiles_widget = QVBoxLayout()
+        
+        # Create nested tab widget for profile types
+        profiles_tab_widget = QTabWidget()
+        profiles_tab_widget.setStyleSheet(f"""
+            QTabWidget::pane {{
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid #555;
+                border-radius: {UIConstants.FRAME_RADIUS}px;
+                background-color: #2b2b2b;
+            }}
+            QTabBar::tab {{
+                background-color: #424242;
+                color: white;
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid #555;
+                padding: {UIConstants.SETTINGS_PADDING_STANDARD}px {UIConstants.TAB_PADDING_H}px;
+                margin-right: {UIConstants.TAB_MARGIN_RIGHT}px;
+                border-top-left-radius: {UIConstants.FRAME_RADIUS}px;
+                border-top-right-radius: {UIConstants.FRAME_RADIUS}px;
+            }}
+            QTabBar::tab:selected {{
+                background-color: #1e88e5;
+                color: white;
+            }}
+            QTabBar::tab:hover {{
+                background-color: #555;
+            }}
+        """)
+        
+        # Settings Profiles sub-tab
+        settings_profiles_tab = self.create_settings_profiles_tab()
+        profiles_tab_widget.addTab(settings_profiles_tab, "Settings")
+        
+        # Color Profiles sub-tab
+        color_profiles_tab = self.create_color_profiles_tab()
+        profiles_tab_widget.addTab(color_profiles_tab, "Colors")
+        
+        # Volume Profiles sub-tab
+        volume_profiles_tab = self.create_volume_profiles_tab()
+        profiles_tab_widget.addTab(volume_profiles_tab, "Volume")
+        
+        profiles_widget.addWidget(profiles_tab_widget)
+        
+        container = QWidget()
+        container.setLayout(profiles_widget)
+        return container
+    
     def create_settings_profiles_tab(self):
         """Create the settings profiles management tab content"""
         return self._create_profile_tab(
@@ -486,6 +609,185 @@ class SettingsDialog(QDialog):
                 ("Delete", lambda: self._on_delete_profile("color")),
             ]
         )
+    
+    def create_volume_profiles_tab(self):
+        """Create the volume profiles management tab content"""
+        from PyQt5.QtWidgets import QListWidget, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView
+        
+        profiles_widget = QVBoxLayout()
+        
+        # Active profile display
+        active_profile_group = QGroupBox("Active Volume Profile")
+        active_profile_layout = QVBoxLayout()
+        
+        self.active_volume_profile_label = QLabel()
+        self.active_volume_profile_label.setStyleSheet(f"color: #42a5f5; font-size: {UIConstants.TITLE_FONT_SIZE}px; padding: {UIConstants.MEDIUM_PADDING}px;")
+        active_profile_layout.addWidget(self.active_volume_profile_label)
+        
+        active_profile_group.setLayout(active_profile_layout)
+        profiles_widget.addWidget(active_profile_group)
+        
+        # Profile list group
+        profile_list_group = QGroupBox("Available Volume Profiles")
+        profile_list_layout = QVBoxLayout()
+        
+        self.volume_profile_list = QListWidget()
+        self.volume_profile_list.setStyleSheet(f"""
+            QListWidget {{
+                background-color: #424242;
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid #666;
+                border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
+                color: white;
+                padding: {UIConstants.MEDIUM_PADDING}px;
+            }}
+            QListWidget::item {{
+                padding: {UIConstants.SETTINGS_PADDING_STANDARD}px;
+                border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
+            }}
+            QListWidget::item:selected {{
+                background-color: #1e88e5;
+            }}
+            QListWidget::item:hover {{
+                background-color: #555;
+            }}
+        """)
+        self.volume_profile_list.itemClicked.connect(self._on_volume_profile_selected)
+        self.volume_profile_list.itemDoubleClicked.connect(lambda item: self._on_apply_volume_profile())
+        profile_list_layout.addWidget(self.volume_profile_list)
+        profile_list_group.setLayout(profile_list_layout)
+        profiles_widget.addWidget(profile_list_group)
+        
+        # Profile details/apps table
+        apps_group = QGroupBox("Apps in Selected Profile (double-click profile to apply)")
+        apps_layout = QVBoxLayout()
+        
+        self.volume_apps_table = QTableWidget()
+        self.volume_apps_table.setColumnCount(2)
+        self.volume_apps_table.setHorizontalHeaderLabels(["Application", "Volume %"])
+        self.volume_apps_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.volume_apps_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.volume_apps_table.verticalHeader().setVisible(False)  # Hide row numbers
+        self.volume_apps_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.volume_apps_table.setStyleSheet(f"""
+            QTableWidget {{
+                background-color: #424242;
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid #666;
+                border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
+                color: white;
+                gridline-color: #555;
+            }}
+            QTableWidget::item {{
+                padding: {UIConstants.MEDIUM_PADDING}px;
+            }}
+            QTableWidget::item:selected {{
+                background-color: #1e88e5;
+            }}
+            QHeaderView::section {{
+                background-color: #333;
+                color: white;
+                padding: {UIConstants.MEDIUM_PADDING}px;
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid #555;
+            }}
+            QTableCornerButton::section {{
+                background-color: #333;
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid #555;
+            }}
+        """)
+        self.volume_apps_table.cellChanged.connect(self._on_volume_table_cell_changed)
+        apps_layout.addWidget(self.volume_apps_table)
+        
+        # App edit buttons (Add/Remove)
+        app_edit_layout = QHBoxLayout()
+        
+        # Shared button styles
+        primary_style = f"""
+            QPushButton {{
+                background-color: #1e88e5;
+                color: white;
+                border: none;
+                border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
+                padding: {UIConstants.SETTINGS_PADDING_STANDARD}px {UIConstants.BUTTON_PADDING_H}px;
+            }}
+            QPushButton:hover {{
+                background-color: #42a5f5;
+            }}
+        """
+        danger_style = f"""
+            QPushButton {{
+                background-color: #d32f2f;
+                color: white;
+                border: none;
+                border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
+                padding: {UIConstants.SETTINGS_PADDING_STANDARD}px {UIConstants.BUTTON_PADDING_H}px;
+            }}
+            QPushButton:hover {{
+                background-color: #f44336;
+            }}
+        """
+        
+        add_app_btn = QPushButton("+ Add App")
+        add_app_btn.setToolTip("Manually add an application to this profile")
+        add_app_btn.clicked.connect(self._on_add_app_to_volume_profile)
+        add_app_btn.setStyleSheet(primary_style)
+        
+        remove_app_btn = QPushButton("- Remove App")
+        remove_app_btn.setToolTip("Remove selected application from this profile")
+        remove_app_btn.clicked.connect(self._on_remove_app_from_volume_profile)
+        remove_app_btn.setStyleSheet(primary_style)
+        
+        save_profile_changes_btn = QPushButton("Save Changes")
+        save_profile_changes_btn.setToolTip("Save changes to the selected profile")
+        save_profile_changes_btn.clicked.connect(self._on_save_volume_profile_changes)
+        save_profile_changes_btn.setStyleSheet(primary_style)
+        
+        app_edit_layout.addWidget(add_app_btn)
+        app_edit_layout.addWidget(remove_app_btn)
+        app_edit_layout.addStretch()
+        app_edit_layout.addWidget(save_profile_changes_btn)
+        
+        apps_layout.addLayout(app_edit_layout)
+        apps_group.setLayout(apps_layout)
+        profiles_widget.addWidget(apps_group)
+        
+        # Profile actions (reuse styles defined above)
+        actions_layout = QHBoxLayout()
+        
+        apply_btn = QPushButton("Apply Selected")
+        apply_btn.setToolTip("Apply volume levels from selected profile to running apps")
+        apply_btn.clicked.connect(self._on_apply_volume_profile)
+        apply_btn.setStyleSheet(primary_style)
+        
+        save_current_btn = QPushButton("Save Current Volumes")
+        save_current_btn.setToolTip("Save current app volume levels to the selected profile")
+        save_current_btn.clicked.connect(self._on_save_current_volumes)
+        save_current_btn.setStyleSheet(primary_style)
+        
+        new_btn = QPushButton("New Profile")
+        new_btn.clicked.connect(self._on_new_volume_profile)
+        new_btn.setStyleSheet(primary_style)
+        
+        rename_btn = QPushButton("Rename")
+        rename_btn.clicked.connect(self._on_rename_volume_profile)
+        rename_btn.setStyleSheet(primary_style)
+        
+        delete_btn = QPushButton("Delete")
+        delete_btn.clicked.connect(self._on_delete_volume_profile)
+        delete_btn.setStyleSheet(danger_style)
+        
+        actions_layout.addWidget(apply_btn)
+        actions_layout.addWidget(save_current_btn)
+        actions_layout.addWidget(new_btn)
+        actions_layout.addWidget(rename_btn)
+        actions_layout.addWidget(delete_btn)
+        
+        profiles_widget.addLayout(actions_layout)
+        
+        # Populate the profile list
+        self._refresh_volume_profile_list()
+        
+        container = QWidget()
+        container.setLayout(profiles_widget)
+        return container
     
     def _create_profile_tab(self, profile_type, active_label_attr, list_attr, group_title_active, 
                             group_title_available, get_active_name, get_names, is_default, 
@@ -736,12 +1038,14 @@ class SettingsDialog(QDialog):
                 self.has_unsaved_settings_changes = False
                 self.refresh_settings_profile_list()
                 self.refresh_overlay_after_settings_profile_switch()
+                self.show_toast(f"Switched to '{profile_name}'")
         else:
             if self.app.settings_manager.switch_color_profile(profile_name):
                 self.has_unsaved_color_changes = False
                 self.refresh_color_profile_list()
                 self.refresh_overlay_colors()
                 self.refresh_color_buttons()
+                self.show_toast(f"Switched to '{profile_name}'")
     
     def _on_switch_profile(self, profile_type):
         """Switch to the selected profile"""
@@ -796,6 +1100,7 @@ class SettingsDialog(QDialog):
             else:
                 self.has_unsaved_color_changes = False
             refresh_func()
+            self.show_toast(f"Saved to '{active_profile}'")
     
     def refresh_color_buttons(self):
         """Refresh color buttons to reflect current color profile"""
@@ -815,6 +1120,388 @@ class SettingsDialog(QDialog):
         for button, color in button_mapping:
             self._update_color_button(button, color)
     
+    # ========== Volume Profile Methods ==========
+    
+    def _refresh_volume_profile_list(self):
+        """Refresh the list of volume profiles"""
+        self.volume_profile_list.clear()
+        active_profile = self.app.settings_manager.get_active_volume_profile_name()
+        
+        for profile_name in self.app.settings_manager.get_volume_profile_names():
+            item_text = profile_name
+            if profile_name == active_profile:
+                item_text += " (Active)"
+            if self.app.settings_manager.is_default_volume_profile(profile_name):
+                item_text += " [Default]"
+            self.volume_profile_list.addItem(item_text)
+        
+        self.active_volume_profile_label.setText(active_profile)
+        
+        # Clear the apps table
+        self.volume_apps_table.setRowCount(0)
+    
+    def _on_volume_profile_selected(self, item):
+        """Handle volume profile selection - show apps in table"""
+        profile_name = self._extract_profile_name(item.text())
+        app_volumes = self.app.settings_manager.get_app_volumes_from_profile(profile_name)
+        
+        self.volume_apps_table.blockSignals(True)  # Prevent cellChanged signals during population
+        self.volume_apps_table.setRowCount(0)
+        for app_name, volume in sorted(app_volumes.items()):
+            row = self.volume_apps_table.rowCount()
+            self.volume_apps_table.insertRow(row)
+            
+            # App name - not editable
+            app_item = QTableWidgetItem(app_name)
+            app_item.setFlags(app_item.flags() & ~Qt.ItemIsEditable)
+            self.volume_apps_table.setItem(row, 0, app_item)
+            
+            # Volume - editable
+            volume_item = QTableWidgetItem(str(volume))
+            self.volume_apps_table.setItem(row, 1, volume_item)
+        
+        self.volume_apps_table.blockSignals(False)
+    
+    def _on_apply_volume_profile(self):
+        """Apply the selected volume profile to running apps"""
+        from PyQt5.QtWidgets import QMessageBox
+        
+        selected_items = self.volume_profile_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a volume profile to apply.")
+            return
+        
+        profile_name = self._extract_profile_name(selected_items[0].text())
+        app_volumes = self.app.settings_manager.get_app_volumes_from_profile(profile_name)
+        
+        if not app_volumes:
+            QMessageBox.information(self, "Empty Profile", f"The profile '{profile_name}' has no saved app volumes.")
+            return
+        
+        # Get current audio sessions
+        sessions = self.app.audio_controller.get_audio_sessions()
+        session_names = {s['name'].lower(): s for s in sessions}
+        
+        applied = []
+        not_running = []
+        
+        for app_name, volume in app_volumes.items():
+            app_lower = app_name.lower()
+            if app_lower in session_names:
+                session = session_names[app_lower]
+                self.app.audio_controller.set_application_volume(session['pids'], volume / 100.0)
+                applied.append(app_name)
+            else:
+                not_running.append(app_name)
+        
+        # Switch to this profile as active
+        self.app.settings_manager.switch_volume_profile(profile_name)
+        self._refresh_volume_profile_list()
+        
+        # Refresh the overlay to show new volumes
+        if hasattr(self.app, 'overlay'):
+            self.app.overlay.refresh_applications()
+        
+        # Show result
+        msg = f"Applied volume profile '{profile_name}'."
+        if not_running:
+            msg += f" ({len(not_running)} apps not running)"
+        
+        self.show_toast(msg)
+    
+    def _on_save_current_volumes(self):
+        """Save current app volumes to the selected profile"""
+        from PyQt5.QtWidgets import QMessageBox
+        
+        selected_items = self.volume_profile_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a volume profile to save to.")
+            return
+        
+        profile_name = self._extract_profile_name(selected_items[0].text())
+        
+        # Get current audio sessions
+        sessions = self.app.audio_controller.get_audio_sessions()
+        
+        if not sessions:
+            QMessageBox.warning(self, "No Apps", "No audio apps are currently running.")
+            return
+        
+        # Build app_volumes dict
+        app_volumes = {}
+        for session in sessions:
+            volume_percent = int(session['volume'] * 100)
+            app_volumes[session['name']] = volume_percent
+        
+        reply = QMessageBox.question(
+            self, "Confirm Save",
+            f"Save current volumes of {len(sessions)} apps to profile '{profile_name}'?\n\nThis will overwrite any existing volumes in this profile.",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            self.app.settings_manager.save_to_volume_profile(profile_name, app_volumes)
+            self._on_volume_profile_selected(selected_items[0])  # Refresh table
+            self.show_toast(f"Saved {len(sessions)} apps to '{profile_name}'")
+    
+    def _on_new_volume_profile(self):
+        """Create a new volume profile"""
+        from PyQt5.QtWidgets import QInputDialog
+        
+        name, ok = QInputDialog.getText(self, "New Volume Profile", "Enter profile name:", text="")
+        
+        if ok and name:
+            name = name.strip()
+            if self.app.settings_manager.create_volume_profile(name, base_on_current=False):
+                self._refresh_volume_profile_list()
+            else:
+                from PyQt5.QtWidgets import QMessageBox
+                QMessageBox.warning(self, "Error", f"Could not create profile '{name}'. It may already exist.")
+    
+    def _on_rename_volume_profile(self):
+        """Rename the selected volume profile"""
+        from PyQt5.QtWidgets import QInputDialog, QMessageBox
+        
+        selected_items = self.volume_profile_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a volume profile to rename.")
+            return
+        
+        old_name = self._extract_profile_name(selected_items[0].text())
+        
+        if self.app.settings_manager.is_default_volume_profile(old_name):
+            QMessageBox.warning(self, "Cannot Rename", "The default profile cannot be renamed.")
+            return
+        
+        new_name, ok = QInputDialog.getText(self, "Rename Volume Profile", "Enter new profile name:", text=old_name)
+        
+        if ok and new_name:
+            new_name = new_name.strip()
+            if self.app.settings_manager.rename_volume_profile(old_name, new_name):
+                self._refresh_volume_profile_list()
+    
+    def _on_delete_volume_profile(self):
+        """Delete the selected volume profile"""
+        from PyQt5.QtWidgets import QMessageBox
+        
+        selected_items = self.volume_profile_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a volume profile to delete.")
+            return
+        
+        profile_name = self._extract_profile_name(selected_items[0].text())
+        
+        if self.app.settings_manager.is_default_volume_profile(profile_name):
+            QMessageBox.warning(self, "Cannot Delete", "The default profile cannot be deleted.")
+            return
+        
+        reply = QMessageBox.question(
+            self, "Confirm Delete",
+            f"Are you sure you want to delete the volume profile '{profile_name}'?\n\nThis action cannot be undone.",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            if self.app.settings_manager.delete_volume_profile(profile_name):
+                self._refresh_volume_profile_list()
+    
+    def _on_volume_table_cell_changed(self, row, column):
+        """Handle cell value changes in the volume table"""
+        # Only handle volume column changes (column 1)
+        if column != 1:
+            return
+        
+        item = self.volume_apps_table.item(row, column)
+        if not item:
+            return
+        
+        # Validate and clamp the volume value
+        try:
+            value = item.text().replace('%', '').strip()
+            volume = int(value)
+            volume = max(0, min(100, volume))  # Clamp to 0-100
+            
+            # Update the cell with validated value
+            self.volume_apps_table.blockSignals(True)
+            item.setText(str(volume))
+            self.volume_apps_table.blockSignals(False)
+        except ValueError:
+            # Reset to 100 if invalid input
+            self.volume_apps_table.blockSignals(True)
+            item.setText("100")
+            self.volume_apps_table.blockSignals(False)
+    
+    def _on_add_app_to_volume_profile(self):
+        """Add a new application to the selected volume profile"""
+        from PyQt5.QtWidgets import QMessageBox, QDialog, QComboBox, QSpinBox
+        
+        selected_items = self.volume_profile_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a volume profile first.")
+            return
+        
+        # Get list of currently running apps for suggestions
+        sessions = self.app.audio_controller.get_audio_sessions()
+        running_apps = [s['name'] for s in sessions]
+        
+        # Get apps already in the table (not from saved profile, since table may have unsaved changes)
+        existing_apps = set()
+        for row in range(self.volume_apps_table.rowCount()):
+            item = self.volume_apps_table.item(row, 0)
+            if item:
+                existing_apps.add(item.text())
+        
+        # Filter out apps already in table (case-insensitive)
+        existing_lower = {a.lower() for a in existing_apps}
+        available_apps = [a for a in running_apps if a.lower() not in existing_lower]
+        
+        # Create dialog with combobox for running apps + option to type custom
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Add Application")
+        dialog.setMinimumWidth(300)
+        dialog_layout = QVBoxLayout(dialog)
+        
+        dialog_layout.addWidget(QLabel("Select from running apps or type a custom name:"))
+        
+        combo = QComboBox()
+        combo.setEditable(True)
+        combo.addItem("")  # Empty option for custom input
+        combo.addItems(available_apps)
+        combo.setStyleSheet(f"""
+            QComboBox {{
+                background-color: #424242;
+                color: white;
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid #666;
+                border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
+                padding: {UIConstants.MEDIUM_PADDING}px;
+            }}
+            QComboBox::drop-down {{
+                border: none;
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: #424242;
+                color: white;
+                selection-background-color: #1e88e5;
+            }}
+        """)
+        dialog_layout.addWidget(combo)
+        
+        dialog_layout.addWidget(QLabel("Volume (0-100):"))
+        
+        volume_spin = QSpinBox()
+        volume_spin.setRange(0, 100)
+        volume_spin.setValue(100)
+        volume_spin.setStyleSheet(f"""
+            QSpinBox {{
+                background-color: #424242;
+                color: white;
+                border: {UIConstants.STANDARD_BORDER_WIDTH}px solid #666;
+                border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
+                padding: {UIConstants.MEDIUM_PADDING}px;
+            }}
+        """)
+        dialog_layout.addWidget(volume_spin)
+        
+        button_layout = QHBoxLayout()
+        ok_btn = QPushButton("Add")
+        ok_btn.clicked.connect(dialog.accept)
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.clicked.connect(dialog.reject)
+        button_layout.addWidget(ok_btn)
+        button_layout.addWidget(cancel_btn)
+        dialog_layout.addLayout(button_layout)
+        
+        dialog.setStyleSheet(f"""
+            QDialog {{
+                background-color: #2b2b2b;
+            }}
+            QLabel {{
+                color: white;
+            }}
+            QPushButton {{
+                background-color: #1e88e5;
+                color: white;
+                border: none;
+                border-radius: {UIConstants.SMALL_BUTTON_RADIUS}px;
+                padding: {UIConstants.SETTINGS_PADDING_STANDARD}px {UIConstants.BUTTON_PADDING_H}px;
+                min-width: 60px;
+            }}
+            QPushButton:hover {{
+                background-color: #42a5f5;
+            }}
+        """)
+        
+        if dialog.exec_() == QDialog.Accepted:
+            app_name = combo.currentText().strip()
+            if not app_name:
+                QMessageBox.warning(self, "Invalid Name", "Please enter an application name.")
+                return
+            
+            if app_name.lower() in existing_lower:
+                QMessageBox.warning(self, "Already Exists", f"'{app_name}' is already in this profile.")
+                return
+            
+            volume = volume_spin.value()
+            
+            # Add to table
+            self.volume_apps_table.blockSignals(True)
+            row = self.volume_apps_table.rowCount()
+            self.volume_apps_table.insertRow(row)
+            
+            app_item = QTableWidgetItem(app_name)
+            app_item.setFlags(app_item.flags() & ~Qt.ItemIsEditable)
+            self.volume_apps_table.setItem(row, 0, app_item)
+            self.volume_apps_table.setItem(row, 1, QTableWidgetItem(str(volume)))
+            self.volume_apps_table.blockSignals(False)
+    
+    def _on_remove_app_from_volume_profile(self):
+        """Remove the selected application from the volume profile"""
+        from PyQt5.QtWidgets import QMessageBox
+        
+        selected_items = self.volume_profile_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a volume profile first.")
+            return
+        
+        selected_rows = self.volume_apps_table.selectionModel().selectedRows()
+        if not selected_rows:
+            QMessageBox.warning(self, "No Selection", "Please select an application to remove from the table.")
+            return
+        
+        # Remove rows in reverse order to avoid index shifting
+        rows_to_remove = sorted([index.row() for index in selected_rows], reverse=True)
+        for row in rows_to_remove:
+            self.volume_apps_table.removeRow(row)
+    
+    def _on_save_volume_profile_changes(self):
+        """Save changes from the table to the selected profile"""
+        from PyQt5.QtWidgets import QMessageBox
+        
+        selected_items = self.volume_profile_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a volume profile to save to.")
+            return
+        
+        profile_name = self._extract_profile_name(selected_items[0].text())
+        
+        # Build app_volumes dict from table
+        app_volumes = {}
+        for row in range(self.volume_apps_table.rowCount()):
+            app_item = self.volume_apps_table.item(row, 0)
+            volume_item = self.volume_apps_table.item(row, 1)
+            
+            if app_item and volume_item:
+                app_name = app_item.text()
+                try:
+                    volume = int(volume_item.text().replace('%', ''))
+                    volume = max(0, min(100, volume))
+                except ValueError:
+                    volume = 100
+                app_volumes[app_name] = volume
+        
+        self.app.settings_manager.save_to_volume_profile(profile_name, app_volumes)
+        self.show_toast(f"Saved {len(app_volumes)} apps to '{profile_name}'")
+
     def refresh_overlay_after_settings_profile_switch(self):
         """Refresh the overlay after switching settings profiles"""
         sm = self.app.settings_manager
@@ -1011,31 +1698,19 @@ class SettingsDialog(QDialog):
     
     def on_save_settings_to_profile(self) -> None:
         """Save current settings to the active settings profile"""
-        from PyQt5.QtWidgets import QMessageBox
-        
         active_profile = self.app.settings_manager.get_active_settings_profile_name()
         self.app.settings_manager.save_to_settings_profile(active_profile)
         self.has_unsaved_settings_changes = False
         self.refresh_settings_profile_list()
-        
-        QMessageBox.information(
-            self, "Saved",
-            f"Settings saved to profile '{active_profile}'."
-        )
+        self.show_toast(f"Settings saved to '{active_profile}'")
     
     def on_save_colors_to_profile(self) -> None:
         """Save current colors to the active color profile"""
-        from PyQt5.QtWidgets import QMessageBox
-        
         active_profile = self.app.settings_manager.get_active_color_profile_name()
         self.app.settings_manager.save_to_color_profile(active_profile)
         self.has_unsaved_color_changes = False
         self.refresh_color_profile_list()
-        
-        QMessageBox.information(
-            self, "Saved",
-            f"Colors saved to profile '{active_profile}'."
-        )
+        self.show_toast(f"Colors saved to '{active_profile}'")
     
     def enter_resize_mode(self) -> None:
         """Enter resize mode - makes the overlay window resizable"""

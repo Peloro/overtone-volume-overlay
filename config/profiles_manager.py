@@ -11,6 +11,10 @@ File structure (profiles.json):
     "colors": {
         "active_profile": "Default", 
         "profiles": { ... }
+    },
+    "volumes": {
+        "active_profile": "Default",
+        "profiles": { ... }
     }
 }
 """
@@ -18,7 +22,7 @@ import json
 import os
 from typing import Dict, Any, List
 from utils import get_logger
-from .defaults import get_default_settings, get_default_colors, SETTINGS_KEYS, COLOR_KEYS
+from .defaults import get_default_settings, get_default_colors, get_default_volume_profile, SETTINGS_KEYS, COLOR_KEYS, VOLUME_PROFILE_KEYS
 
 logger = get_logger(__name__)
 
@@ -31,7 +35,7 @@ class UnifiedProfilesManager:
     
     def __init__(self, profiles_file: str = None):
         self.profiles_file = profiles_file or PROFILES_FILE
-        self.data = {"settings": {}, "colors": {}}
+        self.data = {"settings": {}, "colors": {}, "volumes": {}}
         self._load()
     
     def _load(self) -> None:
@@ -43,13 +47,14 @@ class UnifiedProfilesManager:
                 logger.info(f"Profiles loaded from {self.profiles_file}")
             except Exception as e:
                 logger.error(f"Error loading profiles: {e}", exc_info=True)
-                self.data = {"settings": {}, "colors": {}}
+                self.data = {"settings": {}, "colors": {}, "volumes": {}}
         else:
-            self.data = {"settings": {}, "colors": {}}
+            self.data = {"settings": {}, "colors": {}, "volumes": {}}
         
         # Ensure structure exists
         self._ensure_defaults("settings", get_default_settings)
         self._ensure_defaults("colors", get_default_colors)
+        self._ensure_defaults("volumes", get_default_volume_profile)
         self._save()
     
     def _ensure_defaults(self, section: str, get_defaults) -> None:
@@ -82,13 +87,28 @@ class UnifiedProfilesManager:
     # ========== Generic Profile Operations ==========
     
     def _get_section(self, profile_type: str) -> Dict:
-        return self.data["settings" if profile_type == "settings" else "colors"]
+        if profile_type == "settings":
+            return self.data["settings"]
+        elif profile_type == "colors":
+            return self.data["colors"]
+        else:
+            return self.data["volumes"]
     
     def _get_valid_keys(self, profile_type: str) -> List[str]:
-        return SETTINGS_KEYS if profile_type == "settings" else COLOR_KEYS
+        if profile_type == "settings":
+            return SETTINGS_KEYS
+        elif profile_type == "colors":
+            return COLOR_KEYS
+        else:
+            return VOLUME_PROFILE_KEYS
     
     def _get_defaults(self, profile_type: str) -> Dict[str, Any]:
-        return get_default_settings() if profile_type == "settings" else get_default_colors()
+        if profile_type == "settings":
+            return get_default_settings()
+        elif profile_type == "colors":
+            return get_default_colors()
+        else:
+            return get_default_volume_profile()
     
     def get_profile_names(self, profile_type: str) -> List[str]:
         return list(self._get_section(profile_type)["profiles"].keys())
@@ -156,8 +176,12 @@ class UnifiedProfilesManager:
         if profile_name not in section["profiles"]:
             return False
         
-        valid_keys = self._get_valid_keys(profile_type)
-        section["profiles"][profile_name] = {k: v for k, v in settings.items() if k in valid_keys}
+        if profile_type == "volumes":
+            # Volume profiles store the entire settings dict directly
+            section["profiles"][profile_name] = settings.copy()
+        else:
+            valid_keys = self._get_valid_keys(profile_type)
+            section["profiles"][profile_name] = {k: v for k, v in settings.items() if k in valid_keys}
         self._save()
         return True
     
@@ -237,6 +261,43 @@ class ColorProfilesManager:
     
     def save_current_settings_to_profile(self, name: str, settings: Dict[str, Any]) -> bool:
         return self._manager.save_to_profile("colors", name, settings)
+    
+    def is_default_profile(self, name: str) -> bool:
+        return self._manager.is_default_profile(name)
+
+
+class VolumeProfilesManager:
+    """Wrapper for volume profiles - stores per-app volume levels."""
+    
+    def __init__(self, profiles_file: str = None):
+        # Share the same manager instance
+        if SettingsProfilesManager._shared_manager is None:
+            SettingsProfilesManager._shared_manager = UnifiedProfilesManager(profiles_file)
+        self._manager = SettingsProfilesManager._shared_manager
+    
+    def get_profile_names(self) -> List[str]:
+        return self._manager.get_profile_names("volumes")
+    
+    def get_active_profile_name(self) -> str:
+        return self._manager.get_active_profile_name("volumes")
+    
+    def get_active_profile_settings(self) -> Dict[str, Any]:
+        return self._manager.get_active_profile_settings("volumes")
+    
+    def create_profile(self, name: str, base_on_current: bool = True) -> bool:
+        return self._manager.create_profile("volumes", name, base_on_current)
+    
+    def delete_profile(self, name: str) -> bool:
+        return self._manager.delete_profile("volumes", name)
+    
+    def rename_profile(self, old_name: str, new_name: str) -> bool:
+        return self._manager.rename_profile("volumes", old_name, new_name)
+    
+    def switch_profile(self, name: str) -> bool:
+        return self._manager.switch_profile("volumes", name)
+    
+    def save_current_settings_to_profile(self, name: str, settings: Dict[str, Any]) -> bool:
+        return self._manager.save_to_profile("volumes", name, settings)
     
     def is_default_profile(self, name: str) -> bool:
         return self._manager.is_default_profile(name)

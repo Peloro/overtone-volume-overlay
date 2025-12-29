@@ -4,7 +4,7 @@ from typing import Dict, Any
 from PyQt5.QtCore import QTimer
 from .constants import UIConstants, Hotkeys
 from .defaults import get_default_settings, get_default_colors
-from .profiles_manager import SettingsProfilesManager, ColorProfilesManager
+from .profiles_manager import SettingsProfilesManager, ColorProfilesManager, VolumeProfilesManager
 from utils import get_logger
 
 logger = get_logger(__name__)
@@ -22,6 +22,7 @@ class SettingsManager:
         # Separate profile managers for settings and colors
         self.settings_profiles_manager = SettingsProfilesManager()
         self.color_profiles_manager = ColorProfilesManager()
+        self.volume_profiles_manager = VolumeProfilesManager()
         
         self.load_settings()
     
@@ -236,3 +237,51 @@ class SettingsManager:
     def is_default_color_profile(self, profile_name: str) -> bool:
         """Check if a color profile is the default."""
         return self.color_profiles_manager.is_default_profile(profile_name)
+
+    # ========== Volume Profile Methods ==========
+    
+    def get_active_volume_profile_name(self) -> str:
+        """Get the active volume profile name."""
+        return self.volume_profiles_manager.get_active_profile_name()
+    
+    def get_volume_profile_names(self) -> list:
+        """Get all volume profile names."""
+        return self.volume_profiles_manager.get_profile_names()
+    
+    def get_volume_profile_settings(self, profile_name: str = None) -> dict:
+        """Get volume profile settings. If profile_name is None, returns active profile."""
+        if profile_name is None:
+            return self.volume_profiles_manager.get_active_profile_settings()
+        # Get specific profile settings
+        section = self.volume_profiles_manager._manager._get_section("volumes")
+        return section["profiles"].get(profile_name, {"app_volumes": {}}).copy()
+    
+    def switch_volume_profile(self, profile_name: str) -> bool:
+        """Switch to a different volume profile."""
+        return self.volume_profiles_manager.switch_profile(profile_name)
+    
+    def create_volume_profile(self, profile_name: str, base_on_current: bool = False) -> bool:
+        """Create a new volume profile. By default creates empty profile."""
+        return self.volume_profiles_manager.create_profile(profile_name, base_on_current)
+    
+    def delete_volume_profile(self, profile_name: str) -> bool:
+        """Delete a volume profile."""
+        return self.volume_profiles_manager.delete_profile(profile_name)
+    
+    def rename_volume_profile(self, old_name: str, new_name: str) -> bool:
+        """Rename a volume profile."""
+        return self.volume_profiles_manager.rename_profile(old_name, new_name)
+    
+    def save_to_volume_profile(self, profile_name: str, app_volumes: dict) -> bool:
+        """Save app volumes to a volume profile."""
+        settings = {"app_volumes": app_volumes}
+        return self.volume_profiles_manager.save_current_settings_to_profile(profile_name, settings)
+    
+    def is_default_volume_profile(self, profile_name: str) -> bool:
+        """Check if a volume profile is the default."""
+        return self.volume_profiles_manager.is_default_profile(profile_name)
+    
+    def get_app_volumes_from_profile(self, profile_name: str = None) -> dict:
+        """Get the app_volumes dict from a volume profile."""
+        profile = self.get_volume_profile_settings(profile_name)
+        return profile.get("app_volumes", {})

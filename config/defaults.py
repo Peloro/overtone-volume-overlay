@@ -50,3 +50,19 @@ COLOR_KEYS = [
     "color_app_slider_handle", "color_primary_button_bg", "color_close_button_bg",
     "color_text_white",
 ]
+
+
+def get_default_volume_profile() -> dict:
+    """Get default volume profile settings.
+    
+    Volume profiles store per-application volume levels.
+    Format: {"app_name": volume_percentage, ...}
+    Example: {"firefox": 50, "discord": 80, "spotify": 100}
+    """
+    return {
+        "app_volumes": {}  # Empty by default, users will add their apps
+    }
+
+
+# Volume profile uses dynamic keys (app names), so we just track the wrapper key
+VOLUME_PROFILE_KEYS = ["app_volumes"]

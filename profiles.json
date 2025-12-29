@@ -139,5 +139,13 @@
                 "color_text_white": "#ffe5ec"
             }
         }
+    },
+    "volumes": {
+        "profiles": {
+            "Default": {
+                "app_volumes": {}
+            }
+        },
+        "active_profile": "Default"
     }
 }

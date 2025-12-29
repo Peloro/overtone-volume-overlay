@@ -148,5 +148,10 @@
         },
         "active_profile": "Default"
     },
+<<<<<<< HEAD
     "current_commit": "528529f6082e91ca08578258430e58aca1d7de6e"
 }
+=======
+    "current_commit": "b8f60397a8998d75dff737822a6d9a517e510c83"
+}
+>>>>>>> 528529f6082e91ca08578258430e58aca1d7de6e

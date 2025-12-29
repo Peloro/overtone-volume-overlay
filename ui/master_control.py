@@ -12,6 +12,7 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         QFrame.__init__(self)
         BaseVolumeControl.__init__(self)
         self.audio_controller = audio_controller
+        self._is_master = True
         self.init_volume_state(int(audio_controller.get_master_volume() * UIConstants.VOLUME_PERCENTAGE_FACTOR), audio_controller.get_master_mute())
         self.init_ui()
     
@@ -27,6 +28,7 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
         self.master_label = QLabel("System Volume")
         self.master_label.setStyleSheet(StyleSheets.get_label_stylesheet())
         self.master_label.setMinimumWidth(UIConstants.STRETCH_FACTOR_NONE)
+        self._label = self.master_label  # Reference for base class apply_styles
         layout.addWidget(self.master_label)
         
         master_control_layout = QHBoxLayout()
@@ -82,19 +84,6 @@ class MasterVolumeControl(QFrame, BaseVolumeControl):
     def on_volume_text_changed(self) -> None:
         self.handle_volume_text_change()
     
-    def apply_styles(self):
-        self.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.MASTER_FRAME_BG))
-        
-        if hasattr(self, 'master_label') and self.master_label:
-            self.master_label.setStyleSheet(StyleSheets.get_label_stylesheet())
-        
-        if self.slider:
-            self.slider.setStyleSheet(StyleSheets.get_master_slider_stylesheet())
-        
-        if self.volume_text:
-            self.volume_text.setStyleSheet(StyleSheets.get_master_volume_text_stylesheet())
-        
-        if self.mute_button:
-            self.mute_button.setStyleSheet(StyleSheets.get_mute_button_stylesheet(is_master=True))
-        
-        self.update()
+    def _get_frame_bg_color(self) -> str:
+        """Return the background color for master control."""
+        return Colors.MASTER_FRAME_BG

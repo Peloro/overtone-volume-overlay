@@ -191,113 +191,66 @@ class UnifiedProfilesManager:
 
 # ========== Wrapper Classes for Backwards Compatibility ==========
 
-class SettingsProfilesManager:
-    """Wrapper for settings profiles - maintains API compatibility."""
+# Shared manager instance for all profile wrappers
+_shared_manager: UnifiedProfilesManager = None
+
+
+def _get_shared_manager(profiles_file: str = None) -> UnifiedProfilesManager:
+    """Get or create the shared UnifiedProfilesManager instance."""
+    global _shared_manager
+    if _shared_manager is None:
+        _shared_manager = UnifiedProfilesManager(profiles_file)
+    return _shared_manager
+
+
+class ProfileManagerWrapper:
+    """Generic wrapper for profile types - eliminates code duplication."""
     
-    _shared_manager: UnifiedProfilesManager = None
-    
-    def __init__(self, profiles_file: str = None):
-        if SettingsProfilesManager._shared_manager is None:
-            SettingsProfilesManager._shared_manager = UnifiedProfilesManager(profiles_file)
-        self._manager = SettingsProfilesManager._shared_manager
+    def __init__(self, profile_type: str, profiles_file: str = None):
+        self._manager = _get_shared_manager(profiles_file)
+        self._type = profile_type
     
     def get_profile_names(self) -> List[str]:
-        return self._manager.get_profile_names("settings")
+        return self._manager.get_profile_names(self._type)
     
     def get_active_profile_name(self) -> str:
-        return self._manager.get_active_profile_name("settings")
+        return self._manager.get_active_profile_name(self._type)
     
     def get_active_profile_settings(self) -> Dict[str, Any]:
-        return self._manager.get_active_profile_settings("settings")
+        return self._manager.get_active_profile_settings(self._type)
     
     def create_profile(self, name: str, base_on_current: bool = True) -> bool:
-        return self._manager.create_profile("settings", name, base_on_current)
+        return self._manager.create_profile(self._type, name, base_on_current)
     
     def delete_profile(self, name: str) -> bool:
-        return self._manager.delete_profile("settings", name)
+        return self._manager.delete_profile(self._type, name)
     
     def rename_profile(self, old_name: str, new_name: str) -> bool:
-        return self._manager.rename_profile("settings", old_name, new_name)
+        return self._manager.rename_profile(self._type, old_name, new_name)
     
     def switch_profile(self, name: str) -> bool:
-        return self._manager.switch_profile("settings", name)
+        return self._manager.switch_profile(self._type, name)
     
     def save_current_settings_to_profile(self, name: str, settings: Dict[str, Any]) -> bool:
-        return self._manager.save_to_profile("settings", name, settings)
+        return self._manager.save_to_profile(self._type, name, settings)
     
     def is_default_profile(self, name: str) -> bool:
         return self._manager.is_default_profile(name)
 
 
-class ColorProfilesManager:
-    """Wrapper for color profiles - maintains API compatibility."""
-    
+class SettingsProfilesManager(ProfileManagerWrapper):
+    """Wrapper for settings profiles."""
     def __init__(self, profiles_file: str = None):
-        # Share the same manager instance
-        if SettingsProfilesManager._shared_manager is None:
-            SettingsProfilesManager._shared_manager = UnifiedProfilesManager(profiles_file)
-        self._manager = SettingsProfilesManager._shared_manager
-    
-    def get_profile_names(self) -> List[str]:
-        return self._manager.get_profile_names("colors")
-    
-    def get_active_profile_name(self) -> str:
-        return self._manager.get_active_profile_name("colors")
-    
-    def get_active_profile_settings(self) -> Dict[str, Any]:
-        return self._manager.get_active_profile_settings("colors")
-    
-    def create_profile(self, name: str, base_on_current: bool = True) -> bool:
-        return self._manager.create_profile("colors", name, base_on_current)
-    
-    def delete_profile(self, name: str) -> bool:
-        return self._manager.delete_profile("colors", name)
-    
-    def rename_profile(self, old_name: str, new_name: str) -> bool:
-        return self._manager.rename_profile("colors", old_name, new_name)
-    
-    def switch_profile(self, name: str) -> bool:
-        return self._manager.switch_profile("colors", name)
-    
-    def save_current_settings_to_profile(self, name: str, settings: Dict[str, Any]) -> bool:
-        return self._manager.save_to_profile("colors", name, settings)
-    
-    def is_default_profile(self, name: str) -> bool:
-        return self._manager.is_default_profile(name)
+        super().__init__("settings", profiles_file)
 
 
-class VolumeProfilesManager:
+class ColorProfilesManager(ProfileManagerWrapper):
+    """Wrapper for color profiles."""
+    def __init__(self, profiles_file: str = None):
+        super().__init__("colors", profiles_file)
+
+
+class VolumeProfilesManager(ProfileManagerWrapper):
     """Wrapper for volume profiles - stores per-app volume levels."""
-    
     def __init__(self, profiles_file: str = None):
-        # Share the same manager instance
-        if SettingsProfilesManager._shared_manager is None:
-            SettingsProfilesManager._shared_manager = UnifiedProfilesManager(profiles_file)
-        self._manager = SettingsProfilesManager._shared_manager
-    
-    def get_profile_names(self) -> List[str]:
-        return self._manager.get_profile_names("volumes")
-    
-    def get_active_profile_name(self) -> str:
-        return self._manager.get_active_profile_name("volumes")
-    
-    def get_active_profile_settings(self) -> Dict[str, Any]:
-        return self._manager.get_active_profile_settings("volumes")
-    
-    def create_profile(self, name: str, base_on_current: bool = True) -> bool:
-        return self._manager.create_profile("volumes", name, base_on_current)
-    
-    def delete_profile(self, name: str) -> bool:
-        return self._manager.delete_profile("volumes", name)
-    
-    def rename_profile(self, old_name: str, new_name: str) -> bool:
-        return self._manager.rename_profile("volumes", old_name, new_name)
-    
-    def switch_profile(self, name: str) -> bool:
-        return self._manager.switch_profile("volumes", name)
-    
-    def save_current_settings_to_profile(self, name: str, settings: Dict[str, Any]) -> bool:
-        return self._manager.save_to_profile("volumes", name, settings)
-    
-    def is_default_profile(self, name: str) -> bool:
-        return self._manager.is_default_profile(name)
+        super().__init__("volumes", profiles_file)

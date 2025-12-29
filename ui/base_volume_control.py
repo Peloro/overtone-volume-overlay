@@ -1,7 +1,7 @@
 from typing import Callable
-from PyQt5.QtWidgets import QWidget, QSlider, QPushButton, QLineEdit
+from PyQt5.QtWidgets import QWidget, QSlider, QPushButton, QLineEdit, QLabel
 from PyQt5.QtCore import QTimer
-from config import UIConstants
+from config import UIConstants, StyleSheets
 from utils import get_logger
 
 logger = get_logger(__name__)
@@ -17,6 +17,8 @@ class BaseVolumeControl(QWidget):
         self.mute_button = None
         self.is_muted = False
         self._is_hovered = False
+        self._is_master = False  # Subclasses set this
+        self._label = None  # Reference to the label widget
     
     def init_volume_state(self, current_volume: int, is_muted: bool = False) -> None:
         self.previous_volume = current_volume if current_volume > 0 else UIConstants.VOLUME_PERCENTAGE_FACTOR
@@ -74,3 +76,36 @@ class BaseVolumeControl(QWidget):
     def leaveEvent(self, event) -> None:
         self._is_hovered = False
         super().leaveEvent(event)
+    
+    def apply_styles(self) -> None:
+        """Apply styles to all control components. Override _get_frame_bg_color in subclasses."""
+        from config import Colors
+        
+        # Get background color from subclass
+        bg_color = self._get_frame_bg_color()
+        self.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=bg_color))
+        
+        # Apply label style
+        if self._label:
+            self._label.setStyleSheet(StyleSheets.get_label_stylesheet())
+        
+        # Apply slider style
+        if self.slider:
+            slider_style = StyleSheets.get_master_slider_stylesheet() if self._is_master else StyleSheets.get_app_slider_stylesheet()
+            self.slider.setStyleSheet(slider_style)
+        
+        # Apply volume text style
+        if self.volume_text:
+            text_style = StyleSheets.get_master_volume_text_stylesheet() if self._is_master else StyleSheets.get_volume_text_stylesheet()
+            self.volume_text.setStyleSheet(text_style)
+        
+        # Apply mute button style
+        if self.mute_button:
+            self.mute_button.setStyleSheet(StyleSheets.get_mute_button_stylesheet(is_master=self._is_master))
+        
+        self.update()
+    
+    def _get_frame_bg_color(self) -> str:
+        """Get the background color for the frame. Override in subclasses."""
+        from config import Colors
+        return Colors.APP_CONTROL_BG

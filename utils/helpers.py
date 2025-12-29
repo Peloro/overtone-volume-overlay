@@ -9,6 +9,8 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
 
 _loggers = {}
+
+# Fallback values to avoid circular imports during logger initialization
 _DEFAULT_LOG_MAX_BYTES = 5 * 1024 * 1024
 _DEFAULT_LOG_BACKUP_COUNT = 3
 
@@ -17,19 +19,12 @@ _DEFAULT_LOG_BACKUP_COUNT = 3
 
 def setup_logger(name: str = "overtone", log_file: str = "overtone.log", level: int = logging.INFO,
                 max_bytes: int = None, backup_count: int = None) -> logging.Logger:
+    # Use fallback values to avoid circular import during initialization
     if max_bytes is None:
-        try:
-            from config import UIConstants
-            max_bytes = UIConstants.LOG_MAX_BYTES
-        except ImportError:
-            max_bytes = _DEFAULT_LOG_MAX_BYTES
+        max_bytes = _DEFAULT_LOG_MAX_BYTES
     
     if backup_count is None:
-        try:
-            from config import UIConstants
-            backup_count = UIConstants.LOG_BACKUP_COUNT
-        except ImportError:
-            backup_count = _DEFAULT_LOG_BACKUP_COUNT
+        backup_count = _DEFAULT_LOG_BACKUP_COUNT
     
     if name in _loggers:
         return _loggers[name]

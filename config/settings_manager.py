@@ -155,97 +155,119 @@ class SettingsManager:
             return self._default_colors[name]
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
     
-    # ========== Settings Profile Methods ==========
+    # ========== Generic Profile Methods ==========
     
+    def _get_profile_manager(self, profile_type: str):
+        """Get the profile manager for the given type."""
+        managers = {
+            "settings": self.settings_profiles_manager,
+            "colors": self.color_profiles_manager,
+            "volumes": self.volume_profiles_manager
+        }
+        return managers.get(profile_type)
+    
+    def get_active_profile_name(self, profile_type: str) -> str:
+        """Get the active profile name for a profile type."""
+        return self._get_profile_manager(profile_type).get_active_profile_name()
+    
+    def get_profile_names(self, profile_type: str) -> list:
+        """Get all profile names for a profile type."""
+        return self._get_profile_manager(profile_type).get_profile_names()
+    
+    def switch_profile(self, profile_type: str, profile_name: str) -> bool:
+        """Switch to a different profile."""
+        manager = self._get_profile_manager(profile_type)
+        if manager.switch_profile(profile_name):
+            if profile_type in ("settings", "colors"):
+                self.load_settings()
+            return True
+        return False
+    
+    def create_profile(self, profile_type: str, profile_name: str, base_on_current: bool = True) -> bool:
+        """Create a new profile."""
+        return self._get_profile_manager(profile_type).create_profile(profile_name, base_on_current)
+    
+    def delete_profile(self, profile_type: str, profile_name: str) -> bool:
+        """Delete a profile."""
+        manager = self._get_profile_manager(profile_type)
+        was_active = profile_name == manager.get_active_profile_name()
+        result = manager.delete_profile(profile_name)
+        if result and was_active and profile_type in ("settings", "colors"):
+            self.load_settings()
+        return result
+    
+    def rename_profile(self, profile_type: str, old_name: str, new_name: str) -> bool:
+        """Rename a profile."""
+        return self._get_profile_manager(profile_type).rename_profile(old_name, new_name)
+    
+    def save_to_profile(self, profile_type: str, profile_name: str, settings: dict = None) -> bool:
+        """Save settings to a profile."""
+        if settings is None:
+            settings = self.settings
+        return self._get_profile_manager(profile_type).save_current_settings_to_profile(profile_name, settings)
+    
+    def is_default_profile(self, profile_type: str, profile_name: str) -> bool:
+        """Check if a profile is the default."""
+        return self._get_profile_manager(profile_type).is_default_profile(profile_name)
+    
+    # ========== Convenience Methods (backwards compatibility) ==========
+    
+    # Settings profile shortcuts
     def get_active_settings_profile_name(self) -> str:
-        """Get the active settings profile name."""
-        return self.settings_profiles_manager.get_active_profile_name()
+        return self.get_active_profile_name("settings")
     
     def get_settings_profile_names(self) -> list:
-        """Get all settings profile names."""
-        return self.settings_profiles_manager.get_profile_names()
+        return self.get_profile_names("settings")
     
     def switch_settings_profile(self, profile_name: str) -> bool:
-        """Switch to a different settings profile."""
-        if self.settings_profiles_manager.switch_profile(profile_name):
-            self.load_settings()
-            return True
-        return False
+        return self.switch_profile("settings", profile_name)
     
     def create_settings_profile(self, profile_name: str, base_on_current: bool = True) -> bool:
-        """Create a new settings profile."""
-        return self.settings_profiles_manager.create_profile(profile_name, base_on_current)
+        return self.create_profile("settings", profile_name, base_on_current)
     
     def delete_settings_profile(self, profile_name: str) -> bool:
-        """Delete a settings profile."""
-        was_active = profile_name == self.settings_profiles_manager.get_active_profile_name()
-        result = self.settings_profiles_manager.delete_profile(profile_name)
-        if result and was_active:
-            self.load_settings()
-        return result
+        return self.delete_profile("settings", profile_name)
     
     def rename_settings_profile(self, old_name: str, new_name: str) -> bool:
-        """Rename a settings profile."""
-        return self.settings_profiles_manager.rename_profile(old_name, new_name)
+        return self.rename_profile("settings", old_name, new_name)
     
     def save_to_settings_profile(self, profile_name: str) -> bool:
-        """Save current settings to a settings profile."""
-        return self.settings_profiles_manager.save_current_settings_to_profile(profile_name, self.settings)
+        return self.save_to_profile("settings", profile_name)
     
     def is_default_settings_profile(self, profile_name: str) -> bool:
-        """Check if a settings profile is the default."""
-        return self.settings_profiles_manager.is_default_profile(profile_name)
+        return self.is_default_profile("settings", profile_name)
     
-    # ========== Color Profile Methods ==========
-    
+    # Color profile shortcuts
     def get_active_color_profile_name(self) -> str:
-        """Get the active color profile name."""
-        return self.color_profiles_manager.get_active_profile_name()
+        return self.get_active_profile_name("colors")
     
     def get_color_profile_names(self) -> list:
-        """Get all color profile names."""
-        return self.color_profiles_manager.get_profile_names()
+        return self.get_profile_names("colors")
     
     def switch_color_profile(self, profile_name: str) -> bool:
-        """Switch to a different color profile."""
-        if self.color_profiles_manager.switch_profile(profile_name):
-            self.load_settings()
-            return True
-        return False
+        return self.switch_profile("colors", profile_name)
     
     def create_color_profile(self, profile_name: str, base_on_current: bool = True) -> bool:
-        """Create a new color profile."""
-        return self.color_profiles_manager.create_profile(profile_name, base_on_current)
+        return self.create_profile("colors", profile_name, base_on_current)
     
     def delete_color_profile(self, profile_name: str) -> bool:
-        """Delete a color profile."""
-        was_active = profile_name == self.color_profiles_manager.get_active_profile_name()
-        result = self.color_profiles_manager.delete_profile(profile_name)
-        if result and was_active:
-            self.load_settings()
-        return result
+        return self.delete_profile("colors", profile_name)
     
     def rename_color_profile(self, old_name: str, new_name: str) -> bool:
-        """Rename a color profile."""
-        return self.color_profiles_manager.rename_profile(old_name, new_name)
+        return self.rename_profile("colors", old_name, new_name)
     
     def save_to_color_profile(self, profile_name: str) -> bool:
-        """Save current colors to a color profile."""
-        return self.color_profiles_manager.save_current_settings_to_profile(profile_name, self.settings)
+        return self.save_to_profile("colors", profile_name)
     
     def is_default_color_profile(self, profile_name: str) -> bool:
-        """Check if a color profile is the default."""
-        return self.color_profiles_manager.is_default_profile(profile_name)
+        return self.is_default_profile("colors", profile_name)
 
-    # ========== Volume Profile Methods ==========
-    
+    # Volume profile shortcuts
     def get_active_volume_profile_name(self) -> str:
-        """Get the active volume profile name."""
-        return self.volume_profiles_manager.get_active_profile_name()
+        return self.get_active_profile_name("volumes")
     
     def get_volume_profile_names(self) -> list:
-        """Get all volume profile names."""
-        return self.volume_profiles_manager.get_profile_names()
+        return self.get_profile_names("volumes")
     
     def get_volume_profile_settings(self, profile_name: str = None) -> dict:
         """Get volume profile settings. If profile_name is None, returns active profile."""
@@ -256,29 +278,24 @@ class SettingsManager:
         return section["profiles"].get(profile_name, {"app_volumes": {}}).copy()
     
     def switch_volume_profile(self, profile_name: str) -> bool:
-        """Switch to a different volume profile."""
-        return self.volume_profiles_manager.switch_profile(profile_name)
+        return self.switch_profile("volumes", profile_name)
     
     def create_volume_profile(self, profile_name: str, base_on_current: bool = False) -> bool:
-        """Create a new volume profile. By default creates empty profile."""
-        return self.volume_profiles_manager.create_profile(profile_name, base_on_current)
+        return self.create_profile("volumes", profile_name, base_on_current)
     
     def delete_volume_profile(self, profile_name: str) -> bool:
-        """Delete a volume profile."""
-        return self.volume_profiles_manager.delete_profile(profile_name)
+        return self.delete_profile("volumes", profile_name)
     
     def rename_volume_profile(self, old_name: str, new_name: str) -> bool:
-        """Rename a volume profile."""
-        return self.volume_profiles_manager.rename_profile(old_name, new_name)
+        return self.rename_profile("volumes", old_name, new_name)
     
     def save_to_volume_profile(self, profile_name: str, app_volumes: dict) -> bool:
         """Save app volumes to a volume profile."""
         settings = {"app_volumes": app_volumes}
-        return self.volume_profiles_manager.save_current_settings_to_profile(profile_name, settings)
+        return self.save_to_profile("volumes", profile_name, settings)
     
     def is_default_volume_profile(self, profile_name: str) -> bool:
-        """Check if a volume profile is the default."""
-        return self.volume_profiles_manager.is_default_profile(profile_name)
+        return self.is_default_profile("volumes", profile_name)
     
     def get_app_volumes_from_profile(self, profile_name: str = None) -> dict:
         """Get the app_volumes dict from a volume profile."""

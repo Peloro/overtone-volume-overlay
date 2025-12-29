@@ -14,6 +14,7 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         BaseVolumeControl.__init__(self)
         self.session = session
         self.audio_controller = audio_controller
+        self._is_master = False
         self.init_volume_state(int(session['volume'] * UIConstants.VOLUME_PERCENTAGE_FACTOR), session.get('muted', False))
         self.init_ui()
 
@@ -65,6 +66,7 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
         elided_text = font_metrics.elidedText(self.session['name'], Qt.ElideMiddle, UIConstants.TEXT_ELIDE_WIDTH)
         self.name_label.setText(elided_text)
         self.name_label.setToolTip(self.session['name'])  # Show full name on hover
+        self._label = self.name_label  # Reference for base class apply_styles
         layout.addWidget(self.name_label)
         
         control_layout = QHBoxLayout()
@@ -119,19 +121,6 @@ class AppVolumeControl(QFrame, BaseVolumeControl):
     def on_volume_text_changed(self) -> None:
         self.handle_volume_text_change()
     
-    def apply_styles(self):
-        self.setStyleSheet(StyleSheets.get_frame_stylesheet(bg_color=Colors.APP_CONTROL_BG))
-        
-        if hasattr(self, 'name_label') and self.name_label:
-            self.name_label.setStyleSheet(StyleSheets.get_label_stylesheet())
-        
-        if self.slider:
-            self.slider.setStyleSheet(StyleSheets.get_app_slider_stylesheet())
-        
-        if self.volume_text:
-            self.volume_text.setStyleSheet(StyleSheets.get_volume_text_stylesheet())
-        
-        if self.mute_button:
-            self.mute_button.setStyleSheet(StyleSheets.get_mute_button_stylesheet(is_master=False))
-        
-        self.update()
+    def _get_frame_bg_color(self) -> str:
+        """Return the background color for app controls."""
+        return Colors.APP_CONTROL_BG

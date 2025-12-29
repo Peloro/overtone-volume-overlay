@@ -162,8 +162,4 @@ class Hotkeys:
     DEFAULT_HOTKEY_SETTINGS = "ctrl+shift+s"
     DEFAULT_HOTKEY_QUIT = "ctrl+q"
 
-
-# Note: Colors and StyleSheets are imported in config/__init__.py
-# Do not import them here to avoid circular imports
-
 __all__ = ['AppInfo', 'UIConstants', 'Hotkeys']

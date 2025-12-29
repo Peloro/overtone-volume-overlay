@@ -1538,6 +1538,36 @@ class SettingsDialog(QDialog):
         version_label = QLabel(f"<p style='font-size: {UIConstants.SETTINGS_ABOUT_TITLE_FONT_SIZE}px; color: #aaa;'>Version {AppInfo.VERSION}</p>")
         version_label.setAlignment(Qt.AlignCenter)
         
+        # Update checker section
+        update_layout = QHBoxLayout()
+        update_layout.setAlignment(Qt.AlignCenter)
+        
+        self.update_status_label = QLabel("")
+        self.update_status_label.setStyleSheet("color: #aaa; font-size: 12px;")
+        
+        self.check_update_btn = QPushButton("Check for Updates")
+        self.check_update_btn.setFixedWidth(150)
+        self.check_update_btn.clicked.connect(self._on_check_for_updates)
+        self.check_update_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #1e88e5;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 8px 16px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #1976d2;
+            }
+            QPushButton:disabled {
+                background-color: #555;
+            }
+        """)
+        
+        update_layout.addWidget(self.check_update_btn)
+        update_layout.addWidget(self.update_status_label)
+        
         # Description
         description_label = QLabel(f"""
             <div style='color: white; font-family: Arial; font-size: {UIConstants.SETTINGS_ABOUT_DESCRIPTION_FONT_SIZE}px;'>
@@ -1576,12 +1606,96 @@ class SettingsDialog(QDialog):
         
         about_widget.addWidget(title_label)
         about_widget.addWidget(version_label)
+        about_widget.addLayout(update_layout)
         about_widget.addWidget(description_label)
         about_widget.addStretch()
         
         container = QWidget()
         container.setLayout(about_widget)
         return container
+    
+    def _on_check_for_updates(self):
+        """Check for updates from GitHub"""
+        from utils.updater import check_for_updates_async
+        
+        self.check_update_btn.setEnabled(False)
+        self.check_update_btn.setText("Checking...")
+        self.update_status_label.setText("")
+        self.update_status_label.setStyleSheet("color: #aaa; font-size: 12px;")
+        
+        # Keep reference to prevent garbage collection
+        self._update_checker = check_for_updates_async(self._on_update_check_complete)
+    
+    def _on_update_check_complete(self, available: bool, commit_message: str, details: str):
+        """Handle update check result"""
+        from PyQt5.QtWidgets import QMessageBox
+        from utils.updater import Updater
+        
+        self.check_update_btn.setEnabled(True)
+        self.check_update_btn.setText("Check for Updates")
+        
+        if not commit_message and not details:
+            self.update_status_label.setText("⚠ Could not check for updates")
+            self.update_status_label.setStyleSheet("color: #ff9800; font-size: 12px;")
+            return
+        
+        if available:
+            # Get first line of commit message for display
+            first_line = commit_message.split('\n')[0][:60]
+            self.update_status_label.setText(f"✨ Update available!")
+            self.update_status_label.setStyleSheet("color: #4caf50; font-size: 12px;")
+            
+            reply = QMessageBox.question(
+                self, "Update Available",
+                f"A new update is available!\n\n"
+                f"Commit Message:\n{commit_message[:300]}{'...' if len(commit_message) > 300 else ''}\n\n"
+                f"{details}\n\n"
+                f"Would you like to download and install the update?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            
+            if reply == QMessageBox.Yes:
+                self._download_update()
+        else:
+            self.update_status_label.setText("✓ You're up to date!")
+            self.update_status_label.setStyleSheet("color: #4caf50; font-size: 12px;")
+            self.show_toast("You're running the latest version")
+    
+    def _download_update(self):
+        """Download and install the update"""
+        from PyQt5.QtWidgets import QMessageBox, QProgressDialog
+        from PyQt5.QtCore import Qt
+        from utils.updater import Updater
+        
+        # Create progress dialog
+        progress = QProgressDialog("Downloading update...", "Cancel", 0, 100, self)
+        progress.setWindowTitle("Updating")
+        progress.setWindowModality(Qt.WindowModal)
+        progress.setMinimumDuration(0)
+        progress.setValue(0)
+        
+        updater = Updater()
+        
+        def progress_callback(downloaded, total):
+            if total > 0:
+                percent = int((downloaded / total) * 100)
+                progress.setValue(percent)
+        
+        success = updater.download_and_install(progress_callback)
+        progress.close()
+        
+        if success:
+            reply = QMessageBox.information(
+                self, "Update Ready",
+                "Update downloaded successfully!\n\nThe application will now restart to apply the update.",
+                QMessageBox.Ok
+            )
+            updater.apply_update_and_restart()
+        else:
+            QMessageBox.warning(
+                self, "Update Failed",
+                "Failed to download the update. Please try again later or download manually from GitHub."
+            )
     
     def apply_styles(self):
         """Apply stylesheets to the dialog"""

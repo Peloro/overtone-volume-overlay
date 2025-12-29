@@ -1,8 +1,14 @@
 from .settings_manager import SettingsManager
 from .profiles_manager import UnifiedProfilesManager, SettingsProfilesManager, ColorProfilesManager
-from .constants import UIConstants, AppInfo, Hotkeys
-from .colors import Colors
-from .styles import StyleSheets
+from .config import (
+    UIConstants, AppInfo, Hotkeys, Colors, StyleSheets,
+    get_default_settings, get_default_colors, get_default_volume_profile,
+    SETTINGS_KEYS, COLOR_KEYS, VOLUME_PROFILE_KEYS
+)
 
-__all__ = ['SettingsManager', 'UnifiedProfilesManager', 'SettingsProfilesManager', 'ColorProfilesManager', 
-           'UIConstants', 'Colors', 'StyleSheets', 'AppInfo', 'Hotkeys']
+__all__ = [
+    'SettingsManager', 'UnifiedProfilesManager', 'SettingsProfilesManager', 'ColorProfilesManager',
+    'UIConstants', 'Colors', 'StyleSheets', 'AppInfo', 'Hotkeys',
+    'get_default_settings', 'get_default_colors', 'get_default_volume_profile',
+    'SETTINGS_KEYS', 'COLOR_KEYS', 'VOLUME_PROFILE_KEYS'
+]

@@ -22,7 +22,7 @@ import json
 import os
 from typing import Dict, Any, List
 from utils import get_logger
-from .defaults import get_default_settings, get_default_colors, get_default_volume_profile, SETTINGS_KEYS, COLOR_KEYS, VOLUME_PROFILE_KEYS
+from .config import get_default_settings, get_default_colors, get_default_volume_profile, SETTINGS_KEYS, COLOR_KEYS, VOLUME_PROFILE_KEYS
 
 logger = get_logger(__name__)
 
@@ -77,7 +77,7 @@ class UnifiedProfilesManager:
     def _save(self) -> None:
         """Save all profiles to file."""
         try:
-            from .constants import UIConstants
+            from .config import UIConstants
             with open(self.profiles_file, 'w') as f:
                 json.dump(self.data, f, indent=UIConstants.JSON_INDENT)
             logger.debug("Profiles saved")

@@ -2,8 +2,7 @@ import json
 import os
 from typing import Dict, Any
 from PyQt5.QtCore import QTimer
-from .constants import UIConstants, Hotkeys
-from .defaults import get_default_settings, get_default_colors
+from .config import UIConstants, Hotkeys, get_default_settings, get_default_colors
 from .profiles_manager import SettingsProfilesManager, ColorProfilesManager, VolumeProfilesManager
 from utils import get_logger
 
